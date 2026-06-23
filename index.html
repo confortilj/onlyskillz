@@ -1,0 +1,1860 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>skillz.ai — The Marketplace for LLM Powerups</title>
+<style>
+  :root[data-theme="dark"]{
+    --bg:#0a0a0d; --bg2:#0e0e12; --surface:#131318; --surface2:#1a1a21;
+    --border:#26262e; --border2:#34343e;
+    --text:#f4f4f7; --muted:#9494a1; --faint:#62626e;
+    --accent:#8b6cff; --accent2:#a78bff; --accent-dim:rgba(139,108,255,.14);
+    --green:#3ddc84; --green-dim:rgba(61,220,132,.12);
+    --yellow:#ffc94d; --yellow-dim:rgba(255,201,77,.12);
+    --red:#ff5c6c; --red-dim:rgba(255,92,108,.12);
+    --shadow:0 8px 32px rgba(0,0,0,.45);
+    --hero-grad:radial-gradient(ellipse 80% 60% at 50% -10%, rgba(139,108,255,.18), transparent);
+  }
+  :root[data-theme="light"]{
+    --bg:#fafafa; --bg2:#f4f4f6; --surface:#ffffff; --surface2:#f6f6f9;
+    --border:#e7e7ec; --border2:#d8d8e0;
+    --text:#16161a; --muted:#5f5f6b; --faint:#9b9ba6;
+    --accent:#6c4cf1; --accent2:#5638d6; --accent-dim:rgba(108,76,241,.09);
+    --green:#149d5b; --green-dim:rgba(20,157,91,.10);
+    --yellow:#b07b00; --yellow-dim:rgba(176,123,0,.10);
+    --red:#d63649; --red-dim:rgba(214,54,73,.08);
+    --shadow:0 8px 28px rgba(22,22,26,.08);
+    --hero-grad:radial-gradient(ellipse 80% 60% at 50% -10%, rgba(108,76,241,.10), transparent);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--bg); color:var(--text);
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    font-size:15px; line-height:1.55; -webkit-font-smoothing:antialiased;
+    transition:background .25s,color .25s;
+  }
+  a{color:inherit;text-decoration:none}
+  button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit;font-size:inherit}
+  input,select,textarea{font-family:inherit;font-size:inherit;color:var(--text)}
+  ::placeholder{color:var(--faint)}
+
+  /* ---------- Nav ---------- */
+  nav{
+    position:sticky;top:0;z-index:100;
+    display:flex;align-items:center;gap:26px;
+    padding:0 28px;height:60px;
+    background:color-mix(in srgb, var(--bg) 82%, transparent);
+    backdrop-filter:blur(14px);
+    border-bottom:1px solid var(--border);
+  }
+  .logo{display:flex;align-items:center;gap:9px;font-weight:700;font-size:17px;letter-spacing:-.02em;cursor:pointer}
+  .logo-mark{
+    width:26px;height:26px;border-radius:8px;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));
+    display:flex;align-items:center;justify-content:center;
+    color:#fff;font-size:13px;font-weight:800;
+  }
+  .nav-links{display:flex;gap:4px;flex:1}
+  .nav-link{
+    padding:7px 13px;border-radius:8px;color:var(--muted);
+    font-size:14px;font-weight:500;transition:all .15s;
+  }
+  .nav-link:hover{color:var(--text);background:var(--surface2)}
+  .nav-link.active{color:var(--text);background:var(--surface2)}
+  .nav-right{display:flex;align-items:center;gap:12px}
+  .theme-btn{
+    width:36px;height:36px;border-radius:9px;border:1px solid var(--border);
+    display:flex;align-items:center;justify-content:center;font-size:15px;
+    transition:all .15s; background:var(--surface);
+  }
+  .theme-btn:hover{border-color:var(--border2)}
+  .avatar{
+    width:34px;height:34px;border-radius:50%;
+    background:linear-gradient(135deg,#ff8a5c,#ff5c8a);
+    display:flex;align-items:center;justify-content:center;
+    color:#fff;font-weight:700;font-size:13px;cursor:pointer;
+  }
+  .plan-chip{
+    font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
+    padding:4px 10px;border-radius:99px;
+    background:var(--accent-dim);color:var(--accent);
+  }
+
+  /* ---------- Layout ---------- */
+  .page{max-width:1180px;margin:0 auto;padding:40px 28px 90px}
+  .section-head{display:flex;align-items:baseline;justify-content:space-between;margin:46px 0 18px}
+  .section-title{font-size:20px;font-weight:700;letter-spacing:-.02em}
+  .section-sub{font-size:13px;color:var(--muted)}
+  .see-all{font-size:13px;color:var(--accent);font-weight:600}
+  .see-all:hover{text-decoration:underline}
+
+  /* ---------- Buttons ---------- */
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    padding:9px 18px;border-radius:10px;font-weight:600;font-size:14px;
+    transition:all .15s;border:1px solid transparent;white-space:nowrap;
+  }
+  .btn-primary{background:var(--accent);color:#fff}
+  .btn-primary:hover{background:var(--accent2)}
+  .btn-ghost{border-color:var(--border);background:var(--surface)}
+  .btn-ghost:hover{border-color:var(--border2);background:var(--surface2)}
+  .btn-danger{background:var(--red-dim);color:var(--red);border-color:transparent}
+  .btn-danger:hover{filter:brightness(1.1)}
+  .btn-sm{padding:6px 13px;font-size:13px;border-radius:8px}
+  .btn-lg{padding:13px 26px;font-size:15px;border-radius:12px}
+  .btn[disabled]{opacity:.45;cursor:not-allowed}
+
+  /* ---------- Cards ---------- */
+  .grid{display:grid;gap:16px}
+  .grid-3{grid-template-columns:repeat(3,1fr)}
+  .grid-4{grid-template-columns:repeat(4,1fr)}
+  @media(max-width:980px){.grid-3,.grid-4{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:640px){.grid-3,.grid-4{grid-template-columns:1fr}}
+
+  .skill-card{
+    background:var(--surface);border:1px solid var(--border);border-radius:16px;
+    padding:18px;cursor:pointer;transition:all .18s;display:flex;flex-direction:column;gap:11px;
+  }
+  .skill-card:hover{border-color:var(--border2);transform:translateY(-2px);box-shadow:var(--shadow)}
+  .skill-icon{
+    width:42px;height:42px;border-radius:11px;font-size:20px;
+    display:flex;align-items:center;justify-content:center;
+    background:var(--surface2);border:1px solid var(--border);
+  }
+  .skill-card-top{display:flex;justify-content:space-between;align-items:flex-start}
+  .skill-name{font-weight:650;font-size:15px;letter-spacing:-.01em}
+  .skill-by{font-size:12.5px;color:var(--muted)}
+  .skill-desc{font-size:13px;color:var(--muted);line-height:1.5;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:39px}
+  .skill-meta{display:flex;align-items:center;gap:13px;font-size:12px;color:var(--faint);margin-top:auto}
+  .skill-meta b{color:var(--muted);font-weight:600}
+
+  .badge{
+    display:inline-flex;align-items:center;gap:4px;
+    font-size:10.5px;font-weight:700;letter-spacing:.03em;
+    padding:3px 8px;border-radius:6px;white-space:nowrap;
+  }
+  .badge-safe{background:var(--green-dim);color:var(--green)}
+  .badge-warn{background:var(--yellow-dim);color:var(--yellow)}
+  .badge-risk{background:var(--red-dim);color:var(--red)}
+  .badge-tier{background:var(--accent-dim);color:var(--accent)}
+  .badge-llm{background:var(--surface2);color:var(--muted);border:1px solid var(--border)}
+  .llm-row{display:flex;gap:5px;flex-wrap:wrap}
+
+  .upvote{
+    display:inline-flex;align-items:center;gap:5px;
+    padding:4px 10px;border-radius:8px;border:1px solid var(--border);
+    font-size:12.5px;font-weight:600;color:var(--muted);transition:all .15s;background:var(--surface);
+  }
+  .upvote:hover{border-color:var(--accent);color:var(--accent)}
+  .upvote.voted{background:var(--accent-dim);border-color:transparent;color:var(--accent)}
+
+  /* ---------- Hero ---------- */
+  .hero{
+    text-align:center;padding:74px 20px 60px;position:relative;
+    background:var(--hero-grad);
+  }
+  .hero h1{font-size:clamp(34px,5.5vw,56px);font-weight:800;letter-spacing:-.035em;line-height:1.08}
+  .hero h1 .grad{background:linear-gradient(100deg,var(--accent),var(--accent2),var(--accent));
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+  .hero p{font-size:17px;color:var(--muted);max-width:560px;margin:18px auto 0}
+  .hero-search{
+    display:flex;align-items:center;gap:10px;max-width:560px;margin:30px auto 0;
+    background:var(--surface);border:1px solid var(--border);border-radius:14px;
+    padding:7px 7px 7px 18px;box-shadow:var(--shadow);
+  }
+  .hero-search input{flex:1;background:none;border:none;outline:none;font-size:15px;min-width:0}
+  .hero-stats{display:flex;gap:38px;justify-content:center;margin-top:42px;flex-wrap:wrap}
+  .hero-stat{text-align:center}
+  .hero-stat .n{font-size:22px;font-weight:800;letter-spacing:-.02em}
+  .hero-stat .l{font-size:12px;color:var(--faint);text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+
+  /* ---------- Browse ---------- */
+  .filter-bar{
+    display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:24px;
+  }
+  .filter-bar input[type=search]{
+    flex:1;min-width:220px;padding:10px 16px;border-radius:11px;
+    border:1px solid var(--border);background:var(--surface);outline:none;
+  }
+  .filter-bar input[type=search]:focus{border-color:var(--accent)}
+  .filter-bar select{
+    padding:10px 12px;border-radius:11px;border:1px solid var(--border);
+    background:var(--surface);outline:none;cursor:pointer;font-size:13.5px;
+  }
+  .chip-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:22px}
+  .chip{
+    padding:6px 14px;border-radius:99px;font-size:13px;font-weight:550;
+    border:1px solid var(--border);color:var(--muted);transition:all .15s;background:var(--surface);
+  }
+  .chip:hover{border-color:var(--border2);color:var(--text)}
+  .chip.on{background:var(--accent);border-color:var(--accent);color:#fff}
+
+  /* ---------- Detail ---------- */
+  .detail-grid{display:grid;grid-template-columns:1fr 300px;gap:34px;align-items:start}
+  @media(max-width:880px){.detail-grid{grid-template-columns:1fr}}
+  .tabs{display:flex;gap:2px;border-bottom:1px solid var(--border);margin:26px 0 24px}
+  .tab{
+    padding:10px 17px;font-size:14px;font-weight:600;color:var(--muted);
+    border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s;
+  }
+  .tab:hover{color:var(--text)}
+  .tab.on{color:var(--text);border-color:var(--accent)}
+  .sidebar-card{
+    background:var(--surface);border:1px solid var(--border);border-radius:16px;
+    padding:20px;display:flex;flex-direction:column;gap:14px;
+  }
+  .meta-row{display:flex;justify-content:space-between;font-size:13.5px;padding:7px 0;border-bottom:1px solid var(--border)}
+  .meta-row:last-child{border:none}
+  .meta-row .k{color:var(--muted)}
+  .meta-row .v{font-weight:600;text-align:right}
+
+  .docs{font-size:14.5px;line-height:1.7;color:var(--text)}
+  .docs h2{font-size:19px;margin:26px 0 10px;letter-spacing:-.01em}
+  .docs h3{font-size:15.5px;margin:20px 0 8px}
+  .docs p{margin:10px 0;color:var(--muted)}
+  .docs ul{margin:10px 0 10px 22px;color:var(--muted)}
+  .docs li{margin:4px 0}
+  .docs code{background:var(--surface2);border:1px solid var(--border);padding:2px 6px;border-radius:5px;font-size:12.5px;font-family:'SF Mono',ui-monospace,monospace}
+  .codeblock{
+    position:relative;background:var(--surface);border:1px solid var(--border);
+    border-radius:12px;padding:15px 18px;margin:13px 0;
+    font-family:'SF Mono',ui-monospace,Menlo,monospace;font-size:12.5px;line-height:1.6;
+    overflow-x:auto;color:var(--text);
+  }
+  .copy-btn{
+    position:absolute;top:9px;right:9px;font-size:11px;font-weight:600;
+    padding:4px 10px;border-radius:7px;border:1px solid var(--border);
+    background:var(--surface2);color:var(--muted);transition:all .15s;
+  }
+  .copy-btn:hover{color:var(--text);border-color:var(--border2)}
+
+  .score-ring{position:relative;width:120px;height:120px}
+  .score-ring svg{transform:rotate(-90deg)}
+  .score-num{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .score-num .n{font-size:28px;font-weight:800;letter-spacing:-.02em}
+  .score-num .d{font-size:11px;color:var(--faint)}
+  .check-item{display:flex;gap:12px;align-items:flex-start;padding:13px 0;border-bottom:1px solid var(--border)}
+  .check-item:last-child{border:none}
+  .check-ico{width:26px;height:26px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+
+  /* ---------- Pricing ---------- */
+  .pricing-toggle{display:flex;align-items:center;gap:13px;justify-content:center;margin:26px 0 38px;font-size:14px;font-weight:600}
+  .switch{width:46px;height:26px;border-radius:99px;background:var(--surface2);border:1px solid var(--border);position:relative;transition:all .2s}
+  .switch.on{background:var(--accent);border-color:var(--accent)}
+  .switch .knob{position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff;transition:all .2s;box-shadow:0 1px 4px rgba(0,0,0,.3)}
+  .switch.on .knob{left:22px}
+  .save-tag{font-size:11px;font-weight:700;color:var(--green);background:var(--green-dim);padding:3px 9px;border-radius:99px}
+  .price-card{
+    background:var(--surface);border:1px solid var(--border);border-radius:18px;
+    padding:26px;display:flex;flex-direction:column;gap:18px;position:relative;transition:all .18s;
+  }
+  .price-card.popular{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent), var(--shadow)}
+  .pop-tag{
+    position:absolute;top:-11px;left:50%;transform:translateX(-50%);
+    background:var(--accent);color:#fff;font-size:10.5px;font-weight:700;
+    letter-spacing:.05em;text-transform:uppercase;padding:4px 13px;border-radius:99px;
+  }
+  .price-num{font-size:38px;font-weight:800;letter-spacing:-.03em}
+  .price-num .per{font-size:14px;color:var(--muted);font-weight:500}
+  .feat-list{display:flex;flex-direction:column;gap:9px;font-size:13.5px;color:var(--muted)}
+  .feat-list .f{display:flex;gap:9px;align-items:flex-start}
+  .feat-list .f::before{content:'✓';color:var(--green);font-weight:700;flex-shrink:0}
+
+  /* ---------- Tables / dashboard ---------- */
+  .panel{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:22px}
+  .stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
+  @media(max-width:840px){.stat-grid{grid-template-columns:repeat(2,1fr)}}
+  .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px}
+  .stat-card .l{font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+  .stat-card .n{font-size:26px;font-weight:800;letter-spacing:-.02em;margin-top:5px}
+  .stat-card .s{font-size:12px;margin-top:3px}
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th{text-align:left;color:var(--faint);font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;font-weight:650;padding:9px 12px;border-bottom:1px solid var(--border)}
+  td{padding:12px;border-bottom:1px solid var(--border)}
+  tr:last-child td{border:none}
+  .pos{color:var(--green)} .neg{color:var(--red)} .mut{color:var(--muted)}
+
+  /* ---------- Forms ---------- */
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:700px){.form-grid{grid-template-columns:1fr}}
+  .field{display:flex;flex-direction:column;gap:6px}
+  .field label{font-size:13px;font-weight:600}
+  .field .hint{font-size:11.5px;color:var(--faint)}
+  .field input,.field select,.field textarea{
+    padding:10px 14px;border-radius:10px;border:1px solid var(--border);
+    background:var(--bg2);outline:none;transition:border .15s;
+  }
+  .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent)}
+  .field textarea{resize:vertical;min-height:90px}
+  .full{grid-column:1/-1}
+  .check-pill{display:inline-flex;align-items:center;gap:7px;padding:8px 14px;border-radius:10px;border:1px solid var(--border);font-size:13.5px;font-weight:550;cursor:pointer;transition:all .15s;background:var(--surface)}
+  .check-pill.on{background:var(--accent-dim);border-color:var(--accent);color:var(--accent)}
+
+  /* ---------- Misc ---------- */
+  .toast{
+    position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(80px);
+    background:var(--surface);border:1px solid var(--border2);border-radius:12px;
+    padding:12px 20px;font-size:14px;font-weight:550;box-shadow:var(--shadow);
+    transition:transform .25s;z-index:300;display:flex;gap:9px;align-items:center;
+  }
+  .toast.show{transform:translateX(-50%) translateY(0)}
+  .progress-track{height:8px;border-radius:99px;background:var(--surface2);overflow:hidden}
+  .progress-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .3s}
+  .crumb{font-size:13px;color:var(--muted);margin-bottom:18px;display:inline-block}
+  .crumb:hover{color:var(--text)}
+  .empty{padding:60px 20px;text-align:center;color:var(--muted)}
+  .banner{
+    display:flex;gap:13px;align-items:center;padding:14px 18px;border-radius:13px;
+    font-size:13.5px;font-weight:500;margin-bottom:22px;
+  }
+  .banner-warn{background:var(--yellow-dim);color:var(--yellow);border:1px solid color-mix(in srgb,var(--yellow) 25%,transparent)}
+  .banner-info{background:var(--accent-dim);color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 25%,transparent)}
+  .banner-danger{background:var(--red-dim);color:var(--red);border:1px solid color-mix(in srgb,var(--red) 25%,transparent)}
+  .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px}
+  .modal{background:var(--surface);border:1px solid var(--border2);border-radius:18px;padding:28px;max-width:480px;width:100%;box-shadow:var(--shadow)}
+  footer{border-top:1px solid var(--border);padding:34px 28px;text-align:center;color:var(--faint);font-size:13px;margin-top:40px}
+</style>
+</head>
+<body>
+<nav>
+  <div class="logo" onclick="go('home')">
+    <div class="logo-mark">S</div> skillz<span style="color:var(--accent)">.ai</span>
+  </div>
+  <div class="nav-links" id="navLinks"></div>
+  <div class="nav-right">
+    <span class="plan-chip" id="creditChip" style="cursor:pointer" title="Marketplace credits — refills monthly" onclick="go('billing')"></span>
+    <span class="plan-chip" id="planChip"></span>
+    <button class="btn btn-ghost btn-sm" id="authBtn" onclick="authClick()">Demo</button>
+    <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" title="Toggle theme"></button>
+    <div class="avatar" onclick="go('billing')">LC</div>
+  </div>
+</nav>
+<main id="app"></main>
+<footer>skillz.ai — The marketplace for LLM powerups · Skills prioritized for ChatGPT &amp; Claude · © 2026</footer>
+<div class="toast" id="toast"></div>
+<script>
+/* ================= MOCK DATA ================= */
+const CATEGORIES = ['Productivity','Coding','Research','Data & Analytics','Writing','Design','Finance','Security'];
+const LLMS = ['ChatGPT','Claude','Gemini','Llama'];
+const TIERS = ['Free','Starter','Pro','Enterprise'];
+
+const DESIGNERS = {
+  d1:{name:'Maya Okafor', handle:'@mayabuilds', skills:4, earnings:18420, share:80, avatar:'MO', color:'#ff8a5c'},
+  d2:{name:'Theo Lindqvist', handle:'@theodev', skills:3, earnings:9310, share:70, avatar:'TL', color:'#5cc8ff'},
+  d3:{name:'Priya Raman', handle:'@priyaml', skills:3, earnings:12760, share:70, avatar:'PR', color:'#3ddc84'},
+  d4:{name:'Jonah Velez', handle:'@jvelez', skills:2, earnings:4180, share:60, avatar:'JV', color:'#ffc94d'},
+};
+
+const SKILLS = [
+  {id:'s1', icon:'📊', name:'Deep Data Analyst', designer:'d1', category:'Data & Analytics', tier:'Pro', version:'2.4.1',
+   desc:'Turns any CSV, database export, or messy spreadsheet into clean insights, charts, and an executive summary — automatically.',
+   llms:['ChatGPT','Claude','Gemini'], score:97, upvotes:2841, downloads:48200, rating:4.9, featured:true, trendRank:1,
+   updated:'2026-05-28', sizeKb:84,
+   docs:{overview:'Deep Data Analyst gives your LLM a complete data-analysis workflow: ingestion, cleaning, statistical profiling, visualization specs, and narrative summaries. It detects column types, flags outliers, and proposes the right chart for each finding.',
+     install:'npx skillz add deep-data-analyst --key $SKILLZ_LICENSE',
+     usage:'Attach any tabular file and say "analyze this." The skill profiles the data, runs correlation and trend checks, and returns a structured report with chart specs your LLM can render.',
+     examples:[{q:'Analyze Q1 sales by region and flag anomalies',a:'Returns a regional breakdown table, 3 anomaly flags with z-scores, and a chart spec for a region × month heatmap.'},{q:'Which customers are likely to churn based on this usage export?',a:'Builds a churn-risk score from recency/frequency columns and returns a ranked at-risk list with reasoning per row.'}]},
+   security:{scanned:'2026-06-09', checks:[
+     {name:'Malicious code patterns', status:'pass', note:'No obfuscated code, eval calls, or shell escapes detected.'},
+     {name:'Data exfiltration', status:'pass', note:'No external network calls. All processing stays in-context.'},
+     {name:'Dependency audit', status:'pass', note:'2 dependencies, both pinned and CVE-free.'},
+     {name:'Permission scoping', status:'pass', note:'Requests file-read only. No write or network permissions.'}]}},
+  {id:'s2', icon:'🛠️', name:'Full-Stack Architect', designer:'d2', category:'Coding', tier:'Pro', version:'3.1.0',
+   desc:'Scaffolds production-grade app architectures with ADRs, API contracts, and migration plans tailored to your stack.',
+   llms:['ChatGPT','Claude'], score:94, upvotes:2102, downloads:31400, rating:4.8, featured:true, trendRank:3,
+   updated:'2026-06-01', sizeKb:122,
+   docs:{overview:'Full-Stack Architect encodes senior-architect judgment: it asks the right constraint questions, proposes 2–3 architectures with tradeoffs, and outputs ADRs, schema designs, and API contracts.',
+     install:'npx skillz add full-stack-architect --key $SKILLZ_LICENSE',
+     usage:'Describe your product and constraints. The skill runs a structured design interview, then produces an architecture doc with diagrams-as-code.',
+     examples:[{q:'Design a multi-tenant SaaS backend for 50k users',a:'Returns a tenancy-model comparison (pooled vs siloed), a Postgres RLS schema, and an ADR documenting the choice.'},{q:'Should we use Kafka or SQS for order events?',a:'Produces a decision matrix scored on your throughput/ordering needs with a justified recommendation.'}]},
+   security:{scanned:'2026-06-05', checks:[
+     {name:'Malicious code patterns', status:'pass', note:'Clean. Prompt templates and schema files only.'},
+     {name:'Data exfiltration', status:'pass', note:'No network calls.'},
+     {name:'Dependency audit', status:'warn', note:'1 dependency (diagram renderer) is 2 minor versions behind. No known CVEs.'},
+     {name:'Permission scoping', status:'pass', note:'No permissions requested.'}]}},
+  {id:'s3', icon:'🔍', name:'Research Synthesizer', designer:'d3', category:'Research', tier:'Starter', version:'1.9.2',
+   desc:'Fan-out web research with adversarial fact-checking. Produces cited, verified reports instead of confident guesses.',
+   llms:['ChatGPT','Claude','Gemini','Llama'], score:92, upvotes:1954, downloads:38900, rating:4.7, featured:true, trendRank:2,
+   updated:'2026-05-20', sizeKb:64,
+   docs:{overview:'Research Synthesizer structures multi-source research: it decomposes questions, searches in parallel branches, cross-checks claims against independent sources, and assembles a cited report with confidence levels per claim.',
+     install:'npx skillz add research-synthesizer --key $SKILLZ_LICENSE',
+     usage:'Ask any research question. The skill plans search branches, verifies each claim against 2+ sources, and flags anything it could not verify.',
+     examples:[{q:'What is the current state of solid-state battery manufacturing?',a:'Returns a 9-claim report — each claim cited to 2+ sources, 2 flagged as "single-source, unverified."'},{q:'Compare GDPR vs CCPA obligations for a B2B SaaS',a:'Side-by-side obligations table with article-level citations and a gap checklist.'}]},
+   security:{scanned:'2026-05-21', checks:[
+     {name:'Malicious code patterns', status:'pass', note:'Clean.'},
+     {name:'Data exfiltration', status:'pass', note:'Search queries only; no user data leaves context.'},
+     {name:'Dependency audit', status:'pass', note:'Zero dependencies.'},
+     {name:'Permission scoping', status:'pass', note:'Requests web-search permission only.'}]}},
+  {id:'s4', icon:'✍️', name:'Ghostwriter Pro', designer:'d1', category:'Writing', tier:'Starter', version:'4.0.3',
+   desc:'Learns your voice from 3 writing samples and drafts emails, posts, and essays that actually sound like you.',
+   llms:['ChatGPT','Claude','Gemini'], score:96, upvotes:1788, downloads:29700, rating:4.8, featured:false, trendRank:4,
+   updated:'2026-06-03', sizeKb:41,
+   docs:{overview:'Ghostwriter Pro builds a quantified style profile (sentence rhythm, vocabulary register, structural habits) from your samples and enforces it on every draft, with a self-check pass that scores voice-match before returning.',
+     install:'npx skillz add ghostwriter-pro --key $SKILLZ_LICENSE',
+     usage:'Paste 3 writing samples once. Then request any draft — the skill applies your profile and reports a voice-match score.',
+     examples:[{q:'Write a launch announcement for our new feature',a:'Returns a draft with a 94% voice-match score and a diff of phrases adjusted to fit your style.'},{q:'Make this email sound like me but more direct',a:'Rewrites with your vocabulary register, flags 2 sentences it sharpened.'}]},
+   security:{scanned:'2026-06-04', checks:[
+     {name:'Malicious code patterns', status:'pass', note:'Clean.'},
+     {name:'Data exfiltration', status:'pass', note:'Style profiles stored locally only.'},
+     {name:'Dependency audit', status:'pass', note:'Zero dependencies.'},
+     {name:'Permission scoping', status:'pass', note:'No permissions requested.'}]}},
+  {id:'s5', icon:'🧾', name:'Contract Redliner', designer:'d3', category:'Finance', tier:'Enterprise', version:'2.2.0',
+   desc:'Reviews contracts clause-by-clause against your playbook, flags deviations by severity, and drafts redlines.',
+   llms:['ChatGPT','Claude'], score:91, upvotes:1203, downloads:11200, rating:4.6, featured:false, trendRank:8,
+   updated:'2026-05-15', sizeKb:97,
+   docs:{overview:'Contract Redliner encodes a legal-review playbook: standard positions, fallbacks, and walk-away triggers per clause type. It classifies each clause GREEN/YELLOW/RED and drafts redline language for deviations.',
+     install:'npx skillz add contract-redliner --key $SKILLZ_LICENSE',
+     usage:'Upload a contract and your playbook (or use the built-in SaaS defaults). Returns a clause table with severity, impact notes, and proposed redlines.',
+     examples:[{q:'Review this MSA against our standard positions',a:'Returns 23 clauses: 17 GREEN, 4 YELLOW with fallback language, 2 RED with escalation notes.'},{q:'Is this indemnification clause market-standard?',a:'Compares against playbook norms, flags uncapped liability, drafts a capped alternative.'}]},
+   security:{scanned:'2026-05-16', checks:[
+     {name:'Malicious code patterns', status:'pass', note:'Clean.'},
+     {name:'Data exfiltration', status:'pass', note:'Documents never leave context.'},
+     {name:'Dependency audit', status:'pass', note:'1 dependency, pinned, CVE-free.'},
+     {name:'Permission scoping', status:'pass', note:'File-read only.'}]}},
+  {id:'s6', icon:'🎨', name:'Brand Voice Engine', designer:'d4', category:'Design', tier:'Pro', version:'1.4.0',
+   desc:'Extracts brand guidelines from your existing content and enforces voice, tone, and terminology on everything you write.',
+   llms:['ChatGPT','Claude','Gemini'], score:88, upvotes:967, downloads:14800, rating:4.5, featured:false, trendRank:7,
+   updated:'2026-04-29', sizeKb:73,
+   docs:{overview:'Brand Voice Engine analyzes your site, decks, and docs to produce a structured brand guideline (voice attributes, banned phrases, terminology map), then validates all generated content against it.',
+     install:'npx skillz add brand-voice-engine --key $SKILLZ_LICENSE',
+     usage:'Point it at 3–5 brand assets. It generates guidelines, then every draft request is checked for compliance with a violations report.',
+     examples:[{q:'Generate brand guidelines from these 4 blog posts',a:'Returns a guideline doc: 5 voice attributes, 31-term vocabulary map, 12 banned phrases.'},{q:'Check this landing page copy against our brand',a:'Flags 6 violations by severity with suggested rewrites.'}]},
+   security:{scanned:'2026-05-30', checks:[
+     {name:'Malicious code patterns', status:'pass', note:'Clean.'},
+     {name:'Data exfiltration', status:'warn', note:'Optional analytics ping (disabled by default). Flagged for transparency.'},
+     {name:'Dependency audit', status:'pass', note:'2 dependencies, pinned.'},
+     {name:'Permission scoping', status:'warn', note:'Requests network permission for the optional analytics feature.'}]}},
+  {id:'s7', icon:'⚡', name:'Meeting Autopilot', designer:'d2', category:'Productivity', tier:'Free', version:'2.0.1',
+   desc:'Transforms raw meeting notes or transcripts into action items, owner assignments, follow-up emails, and CRM-ready summaries.',
+   llms:['ChatGPT','Claude','Gemini','Llama'], score:95, upvotes:2310, downloads:61500, rating:4.7, featured:false, trendRank:5,
+   updated:'2026-06-07', sizeKb:38,
+   docs:{overview:'Meeting Autopilot parses transcripts and rough notes into structured outputs: decisions, action items with owners and deadlines, open questions, and a follow-up email draft in your tone.',
+     install:'npx skillz add meeting-autopilot --key $SKILLZ_LICENSE',
+     usage:'Paste notes or a transcript. Choose output: action list, follow-up email, CRM log, or all three.',
+     examples:[{q:'Process this 40-min discovery call transcript',a:'Returns 7 action items with owners, 3 decisions, 2 risks, and a follow-up email draft.'},{q:'Turn my rough standup notes into a status update',a:'Produces a yesterday/today/blockers update formatted for Slack.'}]},
+   security:{scanned:'2026-06-08', checks:[
+     {name:'Malicious code patterns', status:'pass', note:'Clean.'},
+     {name:'Data exfiltration', status:'pass', note:'No network calls.'},
+     {name:'Dependency audit', status:'pass', note:'Zero dependencies.'},
+     {name:'Permission scoping', status:'pass', note:'No permissions requested.'}]}},
+  {id:'s8', icon:'🛡️', name:'PromptShield', designer:'d4', category:'Security', tier:'Enterprise', version:'1.1.0',
+   desc:'Hardens your agents against prompt injection. Scans inbound content, sanitizes tool outputs, and audits skill chains.',
+   llms:['ChatGPT','Claude'], score:99, upvotes:1456, downloads:8900, rating:4.9, featured:true, trendRank:9,
+   updated:'2026-06-10', sizeKb:56,
+   docs:{overview:'PromptShield adds an injection-defense layer to agent workflows: pattern + semantic scanning of inbound documents, output sanitization for tool results, and a chain-auditor that checks skill interactions for privilege escalation.',
+     install:'npx skillz add promptshield --key $SKILLZ_LICENSE',
+     usage:'Install before other skills. It auto-wraps tool outputs and flags suspicious instructions in retrieved content.',
+     examples:[{q:'Scan this email thread before my agent processes it',a:'Flags 1 hidden-instruction injection attempt in a quoted footer, returns a sanitized version.'},{q:'Audit my 5-skill workflow for escalation risks',a:'Maps the permission graph, flags one skill that could trigger unintended file writes.'}]},
+   security:{scanned:'2026-06-10', checks:[
+     {name:'Malicious code patterns', status:'pass', note:'Clean. Independently audited by Trail of Bits (May 2026).'},
+     {name:'Data exfiltration', status:'pass', note:'Air-gapped processing.'},
+     {name:'Dependency audit', status:'pass', note:'Zero dependencies.'},
+     {name:'Permission scoping', status:'pass', note:'Read-only interception layer.'}]}},
+  {id:'s9', icon:'📈', name:'Pitch Deck Forge', designer:'d1', category:'Design', tier:'Starter', version:'2.7.0',
+   desc:'Builds investor-grade pitch decks from a rough idea: narrative arc, slide copy, and chart specs in one pass.',
+   llms:['ChatGPT','Claude','Gemini'], score:90, upvotes:1124, downloads:19300, rating:4.6, featured:false, trendRank:6,
+   updated:'2026-05-25', sizeKb:69,
+   docs:{overview:'Pitch Deck Forge applies a tested narrative framework (problem → wedge → why-now → traction → ask) and generates per-slide copy, speaker notes, and data-visualization specs.',
+     install:'npx skillz add pitch-deck-forge --key $SKILLZ_LICENSE',
+     usage:'Describe your company and the raise. The skill interviews you for missing numbers, then outputs a 12-slide structure with full copy.',
+     examples:[{q:'Seed deck for a logistics-AI startup, raising $2M',a:'Returns 12 slides with copy, a TAM build-up spec, and 4 speaker-note callouts on likely investor questions.'},{q:'Tighten my current deck narrative',a:'Restructures 16 slides to 11, flags 3 slides that bury the lede.'}]},
+   security:{scanned:'2026-05-26', checks:[
+     {name:'Malicious code patterns', status:'pass', note:'Clean.'},
+     {name:'Data exfiltration', status:'pass', note:'No network calls.'},
+     {name:'Dependency audit', status:'pass', note:'1 dependency, pinned.'},
+     {name:'Permission scoping', status:'pass', note:'No permissions requested.'}]}},
+  {id:'s10', icon:'🐞', name:'Bug Triage Surgeon', designer:'d2', category:'Coding', tier:'Free', version:'1.6.4',
+   desc:'Paste a stack trace, get a ranked root-cause hypothesis list with repro steps and a proposed minimal fix.',
+   llms:['ChatGPT','Claude','Llama'], score:93, upvotes:1677, downloads:42100, rating:4.7, featured:false, trendRank:10,
+   updated:'2026-06-02', sizeKb:47,
+   docs:{overview:'Bug Triage Surgeon runs a structured debugging protocol: parse the trace, rank root-cause hypotheses by likelihood, propose the cheapest discriminating test for each, and draft a minimal fix once confirmed.',
+     install:'npx skillz add bug-triage-surgeon --key $SKILLZ_LICENSE',
+     usage:'Paste an error + relevant code. The skill returns hypotheses ranked by probability with a test to confirm or kill each one.',
+     examples:[{q:'TypeError: cannot read properties of undefined in my React app',a:'Returns 3 hypotheses ranked 70/20/10 with one-line checks for each; top hypothesis includes the fix diff.'},{q:'This works in staging but not prod',a:'Generates an environment-diff checklist and identifies the 2 most likely config divergences.'}]},
+   security:{scanned:'2026-06-03', checks:[
+     {name:'Malicious code patterns', status:'pass', note:'Clean.'},
+     {name:'Data exfiltration', status:'pass', note:'No network calls.'},
+     {name:'Dependency audit', status:'pass', note:'Zero dependencies.'},
+     {name:'Permission scoping', status:'pass', note:'No permissions requested.'}]}},
+  {id:'s11', icon:'💹', name:'Variance Decomposer', designer:'d3', category:'Finance', tier:'Pro', version:'1.3.1',
+   desc:'Breaks budget-vs-actual variances into drivers with waterfall analysis and board-ready narrative commentary.',
+   llms:['ChatGPT','Claude'], score:89, upvotes:643, downloads:7800, rating:4.4, featured:false, trendRank:11,
+   updated:'2026-04-18', sizeKb:58,
+   docs:{overview:'Variance Decomposer separates price, volume, mix, and timing effects from raw P&L variances, then writes the narrative a CFO would: what moved, why, and whether it persists.',
+     install:'npx skillz add variance-decomposer --key $SKILLZ_LICENSE',
+     usage:'Provide budget and actual figures (CSV or pasted table). Returns a driver waterfall and commentary per line item above your materiality threshold.',
+     examples:[{q:'Decompose our Q2 revenue miss of $340k',a:'Attributes -$210k to volume (2 churned accounts), -$95k to price (discounting), -$35k to FX; flags volume as persistent.'},{q:'Why is gross margin down 3pts vs budget?',a:'Waterfall: -1.8pts input costs, -0.9pts mix shift, -0.3pts freight. Includes recovery levers.'}]},
+   security:{scanned:'2026-04-19', checks:[
+     {name:'Malicious code patterns', status:'pass', note:'Clean.'},
+     {name:'Data exfiltration', status:'pass', note:'No network calls.'},
+     {name:'Dependency audit', status:'pass', note:'1 dependency, pinned.'},
+     {name:'Permission scoping', status:'pass', note:'File-read only.'}]}},
+  {id:'s12', icon:'🧠', name:'Memory Architect', designer:'d4', category:'Productivity', tier:'Pro', version:'0.9.5',
+   desc:'Gives your agent durable, structured memory: entity files, decision logs, and automatic recall hooks across sessions.',
+   llms:['Claude','ChatGPT'], score:74, upvotes:512, downloads:6100, rating:4.2, featured:false, trendRank:12,
+   updated:'2026-06-06', sizeKb:91,
+   docs:{overview:'Memory Architect maintains a two-tier memory system: a working-memory index loaded every session and a knowledge base of entity files (people, projects, decisions) with automatic deduplication and staleness checks.',
+     install:'npx skillz add memory-architect --key $SKILLZ_LICENSE',
+     usage:'Install and work normally. The skill captures durable facts, links related entities, and surfaces relevant memory at the start of each session.',
+     examples:[{q:'What did we decide about the pricing model last month?',a:'Recalls the decision file: chose usage-based pricing on May 14, includes the three rejected alternatives and why.'},{q:'Who is the contact at Northwind again?',a:'Returns the entity file: Dana Cruz, VP Ops, last spoke June 2, prefers email.'}]},
+   security:{scanned:'2026-06-07', checks:[
+     {name:'Malicious code patterns', status:'pass', note:'Clean.'},
+     {name:'Data exfiltration', status:'fail', note:'Beta sync feature sends memory snapshots to designer-hosted endpoint. Must be opt-in. Fix requested.'},
+     {name:'Dependency audit', status:'warn', note:'3 dependencies; 1 unpinned.'},
+     {name:'Permission scoping', status:'warn', note:'Requests file-write + network. Broader than needed.'}]}},
+];
+
+/* ---- Product types ---- */
+const TYPE_META = {
+  skill:  {label:'Skill',        report:'Security Report',  v90:'Verified Safe',    scanDesc:'Automated scan covering malicious code, data exfiltration, dependency vulnerabilities, and permission scoping.'},
+  prompt: {label:'Prompt Pack',  report:'Security Report',  v90:'Verified Safe',    scanDesc:'Automated scan covering malicious instructions, hidden injections, and content-policy compliance.'},
+  dataset:{label:'Dataset',      report:'Quality Report',   v90:'Verified Quality', scanDesc:'Automated audit covering license provenance, PII exposure, duplication & contamination, and label quality.'},
+  avatar: {label:'Avatar',       report:'Rights & Safety',  v90:'Rights Cleared',   scanDesc:'Verification of likeness rights, voice consent, misuse watermarking, and content-policy compliance.'},
+  model:  {label:'Model / LoRA', report:'Eval & License',   v90:'Verified',         scanDesc:'Audit covering base-model license, benchmark evals, safety behavior, and weight integrity.'},
+  mcp:    {label:'MCP Connector',report:'Security Report',  v90:'Verified Safe',    scanDesc:'Automated scan covering credential handling, scope of API access, injection surfaces, and dependency vulnerabilities.'},
+  workflow:{label:'Workflow',    report:'Security Report',  v90:'Verified Safe',    scanDesc:'Audit of every skill in the chain plus inter-skill permission escalation and data-flow analysis.'},
+  rag:    {label:'RAG Pack',     report:'Quality Report',   v90:'Verified Quality', scanDesc:'Audit covering source licensing, citation accuracy, freshness, and embedding integrity.'},
+  voice:  {label:'Voice Model',  report:'Rights & Safety',  v90:'Rights Cleared',   scanDesc:'Verification of voice consent, royalty terms, misuse watermarking, and impersonation safeguards.'},
+  eval:   {label:'Eval Suite',   report:'Security Report',  v90:'Verified Safe',    scanDesc:'Validation of test integrity, scoring reproducibility, and benchmark-contamination checks.'},
+  assets: {label:'Asset Pack',   report:'Rights & Safety',  v90:'Rights Cleared',   scanDesc:'Verification of generation provenance, style-source licensing, and commercial-use rights.'},
+};
+const CREDIT_TYPES = ['dataset','model','rag','assets'];
+const RENTAL_TYPES = ['avatar','voice'];
+// forensic watermark method applied per format on download
+const WM_METHOD = {
+  skill:'Zero-width text steganography', prompt:'Zero-width text steganography',
+  mcp:'Zero-width text steganography', workflow:'Zero-width text steganography',
+  eval:'Zero-width text steganography',
+  dataset:'Per-buyer canary rows', rag:'Per-buyer canary rows',
+  avatar:'LSB audio watermark (+ C2PA on video render)', voice:'LSB audio watermark',
+  model:'Safetensors metadata fingerprint + weight checksum',
+  assets:'SVG metadata + zero-width marks',
+};
+SKILLS.forEach(s=>s.type='skill');
+
+SKILLS.push(
+  /* ---- Datasets (credit purchase) ---- */
+  {id:'ds1', type:'dataset', icon:'🗂️', name:'LegalBench Contract Corpus', designer:'d3', category:'Finance', tier:'Starter', version:'3.2', credits:40,
+   desc:'48k contract clauses annotated by licensed attorneys — clause type, risk level, market-standard flags. Fine-tune legal copilots that know what they\'re reading.',
+   llms:['ChatGPT','Claude','Gemini','Llama'], score:95, upvotes:884, downloads:3200, rating:4.8, featured:true, trendRank:13, updated:'2026-06-04', sizeKb:812000,
+   meta:[['Records','48,200 clauses'],['Format','JSONL'],['Size','812 MB'],['License','Commercial, non-resale']],
+   docs:{overview:'Every clause is double-annotated by licensed attorneys with adjudication on disagreements (κ = 0.91). Covers 23 clause types across MSAs, NDAs, DPAs, and SOWs, with risk-level labels and market-standard flags calibrated against 2024–2026 deal benchmarks.',
+     install:'skillz data pull legalbench-contracts --key $SKILLZ_LICENSE',
+     usage:'Ships as JSONL with a documented schema. Includes ready-made train/val/test splits and a fine-tuning recipe for both OpenAI and Anthropic fine-tune APIs.',
+     examples:[{q:'Fine-tune a clause classifier',a:'Teams report 94%+ accuracy on clause-type classification after one epoch on the provided splits.'},{q:'Build a risk-flagging copilot',a:'Use risk labels as preference data — included recipe shows a DPO setup that cut false-positives 38%.'}]},
+   security:{scanned:'2026-06-05', checks:[
+     {name:'License provenance', status:'pass', note:'All source documents licensed for derivative commercial use. Chain of title on file.'},
+     {name:'PII & sensitive data', status:'pass', note:'Named entities pseudonymized. 0 PII hits across 3 scanner passes.'},
+     {name:'Duplication & contamination', status:'pass', note:'1.2% near-duplicates removed. No overlap with common eval benchmarks.'},
+     {name:'Label quality', status:'pass', note:'Inter-annotator agreement κ = 0.91 with attorney adjudication.'}]}},
+  {id:'ds2', type:'dataset', icon:'🌐', name:'Multilingual Support Dialogues', designer:'d1', category:'Data & Analytics', tier:'Starter', version:'2.0', credits:55,
+   desc:'120k real-pattern customer-support conversations across 14 languages, formatted as RLHF preference pairs with quality rankings.',
+   llms:['ChatGPT','Claude','Gemini','Llama'], score:93, upvotes:617, downloads:2100, rating:4.7, featured:false, trendRank:15, updated:'2026-05-22', sizeKb:1400000,
+   meta:[['Records','120k dialogues'],['Languages','14'],['Format','JSONL preference pairs'],['Size','1.4 GB'],['License','Commercial']],
+   docs:{overview:'Synthetically expanded from consented seed conversations, each dialogue pair includes a preferred and rejected agent response with ranking rationale — ready for DPO/RLHF pipelines targeting support agents.',
+     install:'skillz data pull multilingual-support --key $SKILLZ_LICENSE',
+     usage:'Filter by language, intent taxonomy (38 intents), or difficulty. Includes eval split with human-rated gold responses.',
+     examples:[{q:'Train a support agent for EU markets',a:'Teams fine-tuning on the DE/FR/ES subsets report CSAT-proxy gains of 11–18% vs base model.'},{q:'Evaluate tone consistency across languages',a:'Use the gold eval split to score your agent per language before launch.'}]},
+   security:{scanned:'2026-05-23', checks:[
+     {name:'License provenance', status:'pass', note:'Seed data fully consented; expansion synthetic.'},
+     {name:'PII & sensitive data', status:'pass', note:'All identifiers synthetic by construction.'},
+     {name:'Duplication & contamination', status:'warn', note:'3.8% template similarity in the long tail. Documented in datasheet.'},
+     {name:'Label quality', status:'pass', note:'Preference rankings validated on a 5k human-rated sample (87% agreement).'}]}},
+  {id:'ds3', type:'dataset', icon:'🧪', name:'SynthMed Clinical Notes', designer:'d4', category:'Research', tier:'Pro', version:'1.1', credits:70,
+   desc:'200k fully synthetic clinical notes with structured diagnoses and med lists. Zero real patient data — train medical NLP without HIPAA exposure.',
+   llms:['ChatGPT','Claude','Gemini','Llama'], score:91, upvotes:402, downloads:980, rating:4.6, featured:false, trendRank:18, updated:'2026-05-10', sizeKb:2100000,
+   meta:[['Records','200k notes'],['Type','Fully synthetic'],['Format','CSV / JSONL'],['Size','2.1 GB'],['License','Commercial']],
+   docs:{overview:'Generated by a clinician-supervised pipeline with realistic comorbidity distributions, abbreviation noise, and documentation-style variation across note types (SOAP, discharge, progress).',
+     install:'skillz data pull synthmed-notes --key $SKILLZ_LICENSE',
+     usage:'Each note links to structured ground truth: ICD-10 codes, medication lists, and extracted entities — ideal for NER and coding-assistant training.',
+     examples:[{q:'Train an ICD-10 coding assistant',a:'Ground-truth codes per note enable supervised training; benchmark harness included.'},{q:'Stress-test clinical NER',a:'Abbreviation-noise tiers let you test extraction robustness at 3 difficulty levels.'}]},
+   security:{scanned:'2026-05-11', checks:[
+     {name:'License provenance', status:'pass', note:'100% synthetic generation; no source-data encumbrance.'},
+     {name:'PII & sensitive data', status:'pass', note:'No real patient data exists in this set by construction.'},
+     {name:'Duplication & contamination', status:'pass', note:'0.4% near-duplicates removed.'},
+     {name:'Label quality', status:'warn', note:'Clinician spot-check on 2k sample: 96% code accuracy; rare-disease tail less validated.'}]}},
+
+  /* ---- Avatars (rent or buyout via credits) ---- */
+  {id:'av1', type:'avatar', icon:'🧑‍💼', name:'Nova — Corporate Presenter', designer:'d1', category:'Design', tier:'Starter', version:'2.3', rent:15, buyout:400, format:'4K video avatar',
+   desc:'Photorealistic 4K presenter with lip-sync in 32 languages. Script in, broadcast-ready video out — product updates, training, and demos.',
+   llms:[], score:98, upvotes:1340, downloads:5400, rating:4.9, featured:true, trendRank:14, updated:'2026-06-08', sizeKb:0,
+   meta:[['Format','4K video avatar'],['Languages','32 (lip-sync)'],['Rent','⬡ 15 / month'],['Buyout','⬡ 400 · exclusive'],['Turnaround','~90 sec/min of video']],
+   docs:{overview:'Nova is built from a fully consented likeness with motion capture across 40+ gesture sets. Feed a script (or let your LLM write one) and receive rendered video with natural pacing, gestures, and emphasis.',
+     install:'skillz avatar rent nova --key $SKILLZ_LICENSE',
+     usage:'Rent for unlimited renders while subscribed (non-exclusive), or buy out for exclusive rights — Nova is then delisted for everyone else.',
+     examples:[{q:'Generate a 60-second product update in Spanish',a:'Returns broadcast-ready 4K video with native-quality lip-sync and auto-generated captions.'},{q:'Turn this blog post into a talking-head explainer',a:'Your LLM condenses to script, Nova renders a 2-min explainer with scene breaks.'}]},
+   security:{scanned:'2026-06-08', checks:[
+     {name:'Likeness rights', status:'pass', note:'Performer contract on file with full commercial-use grant and renewal through 2030.'},
+     {name:'Voice consent', status:'pass', note:'Voice model trained on consented recordings; revocation clause honored via license server.'},
+     {name:'Misuse watermarking', status:'pass', note:'All renders carry C2PA provenance credentials + inaudible watermark.'},
+     {name:'Content-policy compliance', status:'pass', note:'Render API blocks impersonation, political-ad, and adult content categories.'}]}},
+  {id:'av2', type:'avatar', icon:'🎙️', name:'Atlas — Narrator Voice', designer:'d2', category:'Design', tier:'Free', version:'1.8', rent:8, buyout:220, format:'Voice avatar',
+   desc:'Warm, documentary-grade narration voice. Perfect for audiobooks, e-learning, and product walkthroughs. 11 languages.',
+   llms:[], score:96, upvotes:892, downloads:7800, rating:4.8, featured:false, trendRank:16, updated:'2026-05-30', sizeKb:0,
+   meta:[['Format','Voice avatar (TTS)'],['Languages','11'],['Rent','⬡ 8 / month'],['Buyout','⬡ 220 · exclusive'],['Output','48kHz WAV / MP3']],
+   docs:{overview:'Atlas delivers long-form narration with controllable pacing, emphasis tags, and chapter-aware tone shifts. SSML-compatible with extensions for emotional register.',
+     install:'skillz avatar rent atlas --key $SKILLZ_LICENSE',
+     usage:'Stream text or batch-render chapters. Rentals include unlimited renders for internal and published use (non-exclusive).',
+     examples:[{q:'Narrate this 8-chapter onboarding course',a:'Returns 48kHz audio per chapter with consistent tone and a pronunciation report for flagged terms.'},{q:'A/B test energetic vs calm reads',a:'Two renders with register tags; analytics show which holds listeners longer.'}]},
+   security:{scanned:'2026-05-31', checks:[
+     {name:'Likeness rights', status:'pass', note:'Voice actor contract with perpetual commercial grant.'},
+     {name:'Voice consent', status:'pass', note:'Consented studio recordings; actor receives royalty share.'},
+     {name:'Misuse watermarking', status:'pass', note:'Inaudible watermark in all renders.'},
+     {name:'Content-policy compliance', status:'pass', note:'Render API enforces no-impersonation policy.'}]}},
+  {id:'av3', type:'avatar', icon:'🤖', name:'Pixel — Animated Brand Mascot', designer:'d4', category:'Design', tier:'Starter', version:'1.2', rent:12, buyout:350, format:'2D animation rig',
+   desc:'Customizable animated mascot with 200+ rigged expressions. Recolor to your brand, drive it with text — instant explainer videos and reaction clips.',
+   llms:[], score:94, upvotes:520, downloads:2900, rating:4.6, featured:false, trendRank:19, updated:'2026-05-18', sizeKb:0,
+   meta:[['Format','2D animation rig'],['Expressions','200+ rigged'],['Rent','⬡ 12 / month'],['Buyout','⬡ 350 · exclusive'],['Output','MP4 / Lottie / GIF']],
+   docs:{overview:'Pixel ships as a fully rigged character with a brand-theming layer (colors, accessories, logo placement). Drive animations from plain text — the rig maps sentiment and emphasis to expression and gesture.',
+     install:'skillz avatar rent pixel --key $SKILLZ_LICENSE',
+     usage:'Theme once, then generate clips from scripts. Export MP4 for video, Lottie for web, GIF for chat.',
+     examples:[{q:'Make a 20-second feature-launch reaction clip',a:'Returns a themed MP4 with synced expressions and your brand colors.'},{q:'Animate our changelog as a weekly recap',a:'Generates a Lottie animation sequence per changelog section.'}]},
+   security:{scanned:'2026-05-19', checks:[
+     {name:'Likeness rights', status:'pass', note:'Original character design; full IP assignment on file.'},
+     {name:'Voice consent', status:'pass', note:'Optional voice is fully synthetic, no real-person basis.'},
+     {name:'Misuse watermarking', status:'pass', note:'C2PA credentials on all exports.'},
+     {name:'Content-policy compliance', status:'pass', note:'Standard policy enforcement at render time.'}]}},
+
+  /* ---- Prompt packs (subscription download) ---- */
+  {id:'pp1', type:'prompt', icon:'💬', name:'Cold Email Prompt Vault', designer:'d1', category:'Writing', tier:'Starter', version:'5.1', credits:0,
+   desc:'120 battle-tested outreach prompts organized by industry, persona, and funnel stage — each with real reply-rate data from 40k sends.',
+   llms:['ChatGPT','Claude','Gemini','Llama'], score:97, upvotes:1105, downloads:16800, rating:4.7, featured:false, trendRank:17, updated:'2026-06-01', sizeKb:18,
+   docs:{overview:'Every prompt in the vault was A/B tested across real campaigns. Prompts are parameterized (persona, pain point, proof point) and tagged with observed reply-rate lift vs control.',
+     install:'npx skillz add cold-email-vault --key $SKILLZ_LICENSE',
+     usage:'Pick by industry and funnel stage. Each prompt includes fill-in slots, a worked example, and the variant data behind it.',
+     examples:[{q:'First-touch email to a VP Eng at a Series B startup',a:'Returns the top-performing template for that persona (9.2% reply rate) with your variables filled.'},{q:'Break-up email after 3 no-replies',a:'Two tested variants — direct vs humorous — with reply data for each.'}]},
+   security:{scanned:'2026-06-02', checks:[
+     {name:'Malicious instructions', status:'pass', note:'Clean.'},
+     {name:'Hidden injections', status:'pass', note:'No encoded or obfuscated content.'},
+     {name:'Prompt-injection resistance', status:'pass', note:'Templates sanitize user-supplied variables.'},
+     {name:'Policy compliance', status:'pass', note:'No deceptive-practice patterns; CAN-SPAM guidance included.'}]}},
+  {id:'pp2', type:'prompt', icon:'🧭', name:'Socratic Tutor Pack', designer:'d3', category:'Productivity', tier:'Free', version:'2.4', credits:0,
+   desc:'Teaching prompts that make any LLM tutor by questioning, not telling. Covers math, code, writing, and languages with difficulty ladders.',
+   llms:['ChatGPT','Claude','Gemini','Llama'], score:99, upvotes:1490, downloads:31200, rating:4.9, featured:false, trendRank:20, updated:'2026-05-26', sizeKb:14,
+   docs:{overview:'Each prompt enforces Socratic method: the LLM probes understanding, offers graduated hints, and never reveals answers until the learner commits to an attempt. Difficulty ladders adapt across 5 levels.',
+     install:'npx skillz add socratic-tutor --key $SKILLZ_LICENSE',
+     usage:'Choose a subject pack and level. Works for self-study or as a guardrail for kids\' homework help.',
+     examples:[{q:'Help my daughter with algebra without doing it for her',a:'The tutor asks what she tried first, spots the sign error through questions, and celebrates when she finds it herself.'},{q:'Teach me recursion',a:'Builds from a base-case intuition through 4 guided exercises, hinting only when you\'re stuck twice.'}]},
+   security:{scanned:'2026-05-27', checks:[
+     {name:'Malicious instructions', status:'pass', note:'Clean.'},
+     {name:'Hidden injections', status:'pass', note:'Clean.'},
+     {name:'Prompt-injection resistance', status:'pass', note:'Resists answer-extraction attempts.'},
+     {name:'Policy compliance', status:'pass', note:'Age-appropriate content enforcement included.'}]}},
+
+  /* ---- Fine-tuned models / LoRAs (credit purchase) ---- */
+  {id:'md1', type:'model', icon:'⚖️', name:'LexLoRA — Legal Reasoning Adapter', designer:'d3', category:'Finance', tier:'Pro', version:'1.4', credits:60,
+   desc:'LoRA adapter that sharpens contract analysis and legal reasoning. +21 pts on LegalBench vs base. Drop-in for Llama 3.1 8B.',
+   llms:['Llama'], score:92, upvotes:488, downloads:1400, rating:4.7, featured:false, trendRank:21, updated:'2026-05-29', sizeKb:680000,
+   meta:[['Base model','Llama 3.1 8B'],['Type','LoRA adapter (rank 64)'],['Size','680 MB'],['Eval','LegalBench +21 pts'],['License','Commercial']],
+   docs:{overview:'Trained on attorney-annotated corpora (including LegalBench Contract Corpus) with a contrastive objective for clause discrimination. Improves clause classification, obligation extraction, and risk reasoning without degrading general capability (<1% MMLU drift).',
+     install:'skillz model pull lexlora --key $SKILLZ_LICENSE',
+     usage:'Load with PEFT/vLLM on any Llama 3.1 8B checkpoint. Includes eval harness to verify scores on your hardware.',
+     examples:[{q:'Extract obligations from this MSA',a:'Returns structured obligations with party, trigger, and deadline — 89% F1 on held-out test vs 64% for base.'},{q:'Classify these 200 clauses',a:'Batch classification at 94% accuracy with confidence scores.'}]},
+   security:{scanned:'2026-05-30', checks:[
+     {name:'Base-model license', status:'pass', note:'Llama 3.1 Community License terms satisfied; redistribution compliant.'},
+     {name:'Benchmark evals', status:'pass', note:'LegalBench +21, MMLU drift -0.8%. Independently reproduced.'},
+     {name:'Safety behavior', status:'pass', note:'Refusal rates within 2% of base model across harm categories.'},
+     {name:'Weight integrity', status:'pass', note:'SHA-256 verified; no embedded payloads detected.'}]}},
+  {id:'md2', type:'model', icon:'🎨', name:'BrandTone Adapter', designer:'d2', category:'Writing', tier:'Pro', version:'0.9', credits:45,
+   desc:'Style-transfer LoRA that locks generated copy to a trained brand voice. Train on 50 samples of your content, deploy anywhere Llama runs.',
+   llms:['Llama'], score:87, upvotes:311, downloads:760, rating:4.4, featured:false, trendRank:22, updated:'2026-05-08', sizeKb:420000,
+   meta:[['Base model','Llama 3.1 8B'],['Type','Trainable LoRA kit'],['Size','420 MB'],['Training','~50 samples, 20 min'],['License','Commercial']],
+   docs:{overview:'Ships as a pre-conditioned adapter plus a training recipe: feed ~50 samples of brand content and get a voice-locked adapter in about 20 minutes on a single A10G. Includes a voice-match scorer for CI.',
+     install:'skillz model pull brandtone --key $SKILLZ_LICENSE',
+     usage:'Run the included trainer on your content corpus, then load the resulting adapter at inference. The scorer gates outputs below your voice-match threshold.',
+     examples:[{q:'Lock our product copy to brand voice',a:'After training on 60 samples, generated copy scores 91% voice-match vs 58% for base model.'},{q:'Generate 40 ad variants on-brand',a:'Batch generation with auto-rejection of variants scoring under 85%.'}]},
+   security:{scanned:'2026-05-09', checks:[
+     {name:'Base-model license', status:'pass', note:'Compliant.'},
+     {name:'Benchmark evals', status:'warn', note:'Voice-match validated; general-capability drift up to 3% on long-form reasoning.'},
+     {name:'Safety behavior', status:'pass', note:'Within 2% of base across harm categories.'},
+     {name:'Weight integrity', status:'pass', note:'SHA-256 verified.'}]}},
+
+  /* ---- MCP connectors, workflows, RAG, voices, evals, asset packs ---- */
+  {id:'mc1', type:'mcp', icon:'🔌', name:'Postgres Guard Connector', designer:'d2', category:'Coding', tier:'Pro', version:'2.1.0',
+   desc:'MCP server giving agents safe, read-scoped Postgres access — query allowlists, row limits, auto-redaction of PII columns.',
+   llms:['ChatGPT','Claude'], score:96, upvotes:734, downloads:9100, rating:4.8, featured:false, trendRank:23, updated:'2026-06-05', sizeKb:112,
+   docs:{overview:'Postgres Guard sits between your agent and your database: queries are parsed and checked against an allowlist policy, results are row-limited, and columns flagged as PII are redacted before reaching the model context.',
+     install:'npx skillz add postgres-guard --key $SKILLZ_LICENSE',
+     usage:'Point it at a connection string, define policy in one YAML file, and your agent gets a safe query tool.',
+     examples:[{q:'Let my support agent look up order status',a:'Agent queries orders by ID; customer email and address columns arrive redacted per policy.'},{q:'Analytics agent needs aggregate revenue',a:'Aggregations allowed, raw-row export blocked by the 500-row policy cap.'}]},
+   security:{scanned:'2026-06-06', checks:[
+     {name:'Credential handling', status:'pass', note:'Connection strings held in env only; never enter model context.'},
+     {name:'API access scope', status:'pass', note:'Read-only enforced at the role level, not just policy.'},
+     {name:'Injection surfaces', status:'pass', note:'Queries parameterized; SQL from model is parsed, never raw-executed.'},
+     {name:'Dependency audit', status:'pass', note:'3 dependencies, pinned, CVE-free.'}]}},
+  {id:'wf1', type:'workflow', icon:'🔁', name:'Outbound Engine Workflow', designer:'d1', category:'Productivity', tier:'Pro', version:'1.5.2',
+   desc:'Five-skill chain: prospect research → ICP scoring → personalized draft → brand-voice check → CRM log. One command, full pipeline.',
+   llms:['ChatGPT','Claude'], score:93, upvotes:861, downloads:7400, rating:4.7, featured:false, trendRank:24, updated:'2026-05-31', sizeKb:88,
+   docs:{overview:'Outbound Engine orchestrates five marketplace skills into a single pipeline with checkpoints — you approve the draft before anything sends. Works with your connected CRM and email tools.',
+     install:'npx skillz add outbound-engine --key $SKILLZ_LICENSE',
+     usage:'Give it a target account or list. It researches, scores fit, drafts personalized outreach in your voice, and stages CRM entries for approval.',
+     examples:[{q:'Run the pipeline on these 20 accounts',a:'Returns 20 research briefs, fit scores, and staged drafts — 14 flagged ready, 6 flagged thin-signal.'},{q:'Why did Acme score low?',a:'Shows the scoring rationale: no hiring signal, tech stack mismatch on 2 of 3 criteria.'}]},
+   security:{scanned:'2026-06-01', checks:[
+     {name:'Chain audit', status:'pass', note:'All 5 component skills individually verified (min score 92).'},
+     {name:'Permission escalation', status:'pass', note:'No skill gains permissions through the chain; send requires human approval.'},
+     {name:'Data flow', status:'pass', note:'Prospect data never leaves connected tools.'},
+     {name:'Dependency audit', status:'pass', note:'Components pinned to scanned versions.'}]}},
+  {id:'rg1', type:'rag', icon:'📚', name:'US Tax Code RAG Pack', designer:'d3', category:'Finance', tier:'Pro', version:'2026.2', credits:50,
+   desc:'The complete IRC + regulations, pre-chunked, embedded, and citation-mapped. Quarterly refreshes. Plug into any retrieval pipeline.',
+   llms:['ChatGPT','Claude','Gemini','Llama'], score:94, upvotes:529, downloads:2300, rating:4.8, featured:false, trendRank:25, updated:'2026-06-02', sizeKb:3400000,
+   meta:[['Documents','IRC + Treas. Reg. + 2026 updates'],['Chunks','412k, citation-mapped'],['Embeddings','3 model options included'],['Size','3.4 GB'],['Refresh','Quarterly, free while subscribed']],
+   docs:{overview:'Every chunk carries precise section citations and effective-date metadata, so your tax agent can cite §163(j)(7)(A)(ii) — and know whether it applies to the tax year in question.',
+     install:'skillz data pull ustax-rag --key $SKILLZ_LICENSE',
+     usage:'Import into pgvector, Pinecone, or local FAISS. Includes a retrieval config tuned for statutory cross-references.',
+     examples:[{q:'Is this equipment purchase eligible for bonus depreciation in 2026?',a:'Agent retrieves §168(k) with current phase-down percentages and cites the exact provision.'},{q:'Build a tax-research copilot',a:'Teams report 89% citation accuracy vs 54% for ungrounded GPT-4-class baselines.'}]},
+   security:{scanned:'2026-06-03', checks:[
+     {name:'Source licensing', status:'pass', note:'Public-domain statutory text; editorial enrichments original.'},
+     {name:'Citation accuracy', status:'pass', note:'99.2% verified on a 5k-citation sample.'},
+     {name:'Freshness', status:'pass', note:'Current through May 2026 regulatory updates.'},
+     {name:'Embedding integrity', status:'pass', note:'Checksums verified across all 3 embedding sets.'}]}},
+  {id:'vc1', type:'voice', icon:'🎤', name:'Vera — Conversational Voice', designer:'d1', category:'Design', tier:'Starter', version:'3.0', rent:10, buyout:280, format:'Real-time voice (TTS)',
+   desc:'Low-latency conversational voice tuned for agents that talk — natural disfluencies, interruption handling, 9 languages at 140ms.',
+   llms:[], score:97, upvotes:1012, downloads:6200, rating:4.8, featured:false, trendRank:26, updated:'2026-06-09', sizeKb:0,
+   meta:[['Format','Streaming TTS'],['Latency','~140 ms first-token'],['Languages','9'],['Rent','⬡ 10 / month'],['Buyout','⬡ 280 · exclusive']],
+   docs:{overview:'Vera is built for live conversation, not narration: she handles interruptions gracefully, uses natural hesitations, and shifts register with conversational context. Consented voice talent on royalty share.',
+     install:'skillz avatar rent vera --key $SKILLZ_LICENSE',
+     usage:'Stream tokens from your LLM straight into the synthesis endpoint. WebRTC and websocket interfaces included.',
+     examples:[{q:'Voice my customer-support agent',a:'Live demo call: natural turn-taking, apologetic register on complaints, 140ms response feel.'},{q:'Phone-tree replacement',a:'Handles barge-in interruptions without losing dialogue state.'}]},
+   security:{scanned:'2026-06-09', checks:[
+     {name:'Voice consent', status:'pass', note:'Talent contract with royalty share; revocation honored via license server.'},
+     {name:'Royalty terms', status:'pass', note:'Designer and talent splits encoded in payout system.'},
+     {name:'Misuse watermarking', status:'pass', note:'Inaudible watermark on all output.'},
+     {name:'Impersonation safeguards', status:'pass', note:'Cannot be prompted to imitate other real voices.'}]}},
+  {id:'ev1', type:'eval', icon:'🧪', name:'AgentBench Safety Suite', designer:'d4', category:'Security', tier:'Pro', version:'1.7.0',
+   desc:'900 adversarial test cases for agent deployments: injection, data leakage, tool misuse, jailbreaks. CI-ready with scoring harness.',
+   llms:['ChatGPT','Claude','Gemini','Llama'], score:98, upvotes:644, downloads:4800, rating:4.9, featured:false, trendRank:27, updated:'2026-06-07', sizeKb:156,
+   docs:{overview:'AgentBench Safety probes your agent before attackers do: 900 cases across 6 attack families, each with automated pass/fail scoring and severity weighting. Run in CI to block regressions.',
+     install:'npx skillz add agentbench-safety --key $SKILLZ_LICENSE',
+     usage:'Point the harness at your agent endpoint. Get a scored report with per-family breakdowns and failing-case transcripts.',
+     examples:[{q:'Test my email agent before launch',a:'Report: 94% overall, but 3 failures in the indirect-injection family with full repro transcripts.'},{q:'Gate deploys on safety score',a:'CI integration blocks merges scoring under your threshold.'}]},
+   security:{scanned:'2026-06-08', checks:[
+     {name:'Test integrity', status:'pass', note:'Attack cases sandboxed; cannot affect systems under test beyond the session.'},
+     {name:'Scoring reproducibility', status:'pass', note:'Deterministic scoring; ±0.4% across reruns.'},
+     {name:'Contamination check', status:'pass', note:'Cases held out from public corpora; rotated quarterly.'},
+     {name:'Dependency audit', status:'pass', note:'2 dependencies, pinned.'}]}},
+  {id:'ap1', type:'assets', icon:'🖼️', name:'Neo-Brutalist UI Asset Pack', designer:'d4', category:'Design', tier:'Starter', version:'2.2', credits:25, format:'SVG + PNG + Figma',
+   desc:'1,400 AI-generated UI assets in a cohesive neo-brutalist style: icons, illustrations, empty states, textures. Full commercial rights.',
+   llms:[], score:95, upvotes:702, downloads:5600, rating:4.7, featured:false, trendRank:28, updated:'2026-05-27', sizeKb:480000,
+   meta:[['Assets','1,400 (icons, illos, textures)'],['Formats','SVG, PNG @2x, Figma library'],['Style','Neo-brutalist, 3 color systems'],['License','Full commercial, non-resale']],
+   docs:{overview:'Generated with a custom-trained style model and hand-curated for consistency — every icon shares stroke weight, corner radius, and shadow language. Figma library included with variants wired.',
+     install:'skillz data pull neobrutalist-pack --key $SKILLZ_LICENSE',
+     usage:'Import the Figma library or grab SVGs directly. Color-system tokens swap the whole pack to your palette.',
+     examples:[{q:'Theme the pack to our brand colors',a:'Swap one token set; all 1,400 assets recolor consistently.'},{q:'Empty states for a finance app',a:'22 ready empty-state illustrations in the pack match your icon set automatically.'}]},
+   security:{scanned:'2026-05-28', checks:[
+     {name:'Generation provenance', status:'pass', note:'Custom style model; training set fully licensed.'},
+     {name:'Style-source licensing', status:'pass', note:'No mimicry of identifiable living artists.'},
+     {name:'Commercial rights', status:'pass', note:'Full commercial grant, non-resale, no attribution required.'},
+     {name:'Content compliance', status:'pass', note:'All assets policy-screened.'}]}}
+);
+
+const PLANS = [
+  {id:'free', name:'Free', mo:0, skills:'3 skills', share:null, popular:false, credits:0,
+   feats:['3 active skill licenses','Community skills & prompt packs','No marketplace credits','Standard security scans','Docs & examples access','Community support']},
+  {id:'starter', name:'Starter', mo:9.99, skills:'10 skills', share:60, popular:false, credits:20,
+   feats:['10 active skill licenses','⬡ 20 credits/mo — datasets, avatars & models','Free + Starter tier items','Standard security scans','Email support','Designer payouts: 60% share']},
+  {id:'pro', name:'Pro', mo:24.99, skills:'Unlimited', share:70, popular:true, credits:60,
+   feats:['Unlimited skill licenses','⬡ 60 credits/mo — datasets, avatars & models','Free, Starter + Pro tier items','Priority security re-scans','Early access to new releases','Priority support','Designer payouts: 70% share']},
+  {id:'enterprise', name:'Enterprise', mo:99.99, skills:'Unlimited', share:80, popular:false, credits:200,
+   feats:['Unlimited licenses + 10 team seats','⬡ 200 credits/mo — pooled across team','All tiers incl. Enterprise items','SSO & audit logs','Private team skills & datasets','Dedicated account manager','Designer payouts: 80% share']},
+];
+const TIER_RANK = {free:0, starter:1, pro:2, enterprise:3};
+const SKILL_TIER_RANK = {Free:0, Starter:1, Pro:2, Enterprise:3};
+
+/* ================= STATE ================= */
+let state = {
+  theme: 'dark',
+  route: 'home',
+  routeArg: null,
+  upvoted: new Set(['s3']),
+  downloaded: new Set(['s7','s3']),
+  rented: new Set(),
+  ownedForever: new Set(),
+  credits: 60,
+  typeF: 'All',
+  plan: 'pro',
+  annual: false,
+  subActive: true,
+  renewal: '2026-07-12',
+  search: '',
+  cat: 'All',
+  tierF: 'All',
+  llmF: 'All',
+  sort: 'trending',
+  detailTab: 'overview',
+  scanState: null, // null | {pct, log[]}
+  uploadLLMs: new Set(['ChatGPT','Claude']),
+};
+try { const t = localStorage.getItem('skillz-theme'); if(t) state.theme = t; } catch(e){}
+document.documentElement.dataset.theme = state.theme;
+
+/* ================= HELPERS ================= */
+const $ = id => document.getElementById(id);
+const fmt = n => n >= 1000 ? (n/1000).toFixed(1).replace('.0','') + 'k' : n;
+const money = n => '$' + n.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+const esc = s => s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+function scoreBadge(score, type){
+  const v90 = TYPE_META[type||'skill'].v90;
+  if(score >= 90) return `<span class="badge badge-safe">🛡 ${score} · ${v90}</span>`;
+  if(score >= 75) return `<span class="badge badge-warn">🛡 ${score} · Review advised</span>`;
+  return `<span class="badge badge-risk">🛡 ${score} · Issues found</span>`;
+}
+function priceBadge(s){
+  if(CREDIT_TYPES.includes(s.type)) return `<span class="badge badge-tier">⬡ ${s.credits} credits</span>`;
+  if(RENTAL_TYPES.includes(s.type)) return `<span class="badge badge-tier">⬡ ${s.rent}/mo · ⬡ ${s.buyout} buyout</span>`;
+  return `<span class="badge badge-tier">${s.tier}</span>`;
+}
+function llmBadges(llms, max){
+  const shown = max ? llms.slice(0,max) : llms;
+  let html = shown.map(l=>`<span class="badge badge-llm">${l}</span>`).join('');
+  if(max && llms.length > max) html += `<span class="badge badge-llm">+${llms.length-max}</span>`;
+  return html;
+}
+function canDownload(skill){
+  return state.subActive && TIER_RANK[state.plan] >= SKILL_TIER_RANK[skill.tier];
+}
+function toast(msg){
+  const t = $('toast'); t.innerHTML = msg; t.classList.add('show');
+  clearTimeout(t._h); t._h = setTimeout(()=>t.classList.remove('show'), 2600);
+}
+function designerOf(s){
+  if(DESIGNERS[s.designer]) return DESIGNERS[s.designer];
+  const label = s.designerLabel || 'Independent Designer';
+  const at = label.indexOf('@');
+  return at > -1 ? {name: label.slice(0, at).trim(), handle: '@'+label.slice(at+1)} : {name: label, handle: ''};
+}
+function topUp(){ // demo behavior; overridden in live mode
+  state.credits += 50; toast('⬡ 50 credits added — $14.99 charged.'); render();
+}
+function authClick(){ toast('Demo mode — accounts activate when connected to the live backend.'); }
+function toggleTheme(){
+  state.theme = state.theme === 'dark' ? 'light' : 'dark';
+  document.documentElement.dataset.theme = state.theme;
+  try{ localStorage.setItem('skillz-theme', state.theme); }catch(e){}
+  $('themeBtn').textContent = state.theme === 'dark' ? '☀️' : '🌙';
+}
+function toggleUpvote(e, id){
+  e.stopPropagation();
+  if(state.upvoted.has(id)){ state.upvoted.delete(id); SKILLS.find(s=>s.id===id).upvotes--; }
+  else { state.upvoted.add(id); SKILLS.find(s=>s.id===id).upvotes++; }
+  render();
+}
+function go(route, arg){
+  state.route = route; state.routeArg = arg || null;
+  state.detailTab = 'overview';
+  window.scrollTo({top:0});
+  render();
+}
+
+/* ================= SKILL CARD ================= */
+function skillCard(s){
+  const d = designerOf(s);
+  const voted = state.upvoted.has(s.id);
+  return `
+  <div class="skill-card" onclick="go('skill','${s.id}')">
+    <div class="skill-card-top">
+      <div class="skill-icon">${s.icon}</div>
+      <button class="upvote ${voted?'voted':''}" onclick="toggleUpvote(event,'${s.id}')">▲ ${fmt(s.upvotes)}</button>
+    </div>
+    <div>
+      <div class="skill-name">${s.name}</div>
+      <div class="skill-by">${TYPE_META[s.type].label} by ${d.name}</div>
+    </div>
+    <div class="skill-desc">${s.desc}</div>
+    <div class="llm-row">${s.format?`<span class="badge badge-llm">${s.format}</span>`:llmBadges(s.llms,3)}${priceBadge(s)}</div>
+    <div class="skill-meta">
+      ${scoreBadge(s.score, s.type)}
+      <span>★ <b>${s.rating}</b></span>
+      <span>⬇ <b>${fmt(s.downloads)}</b></span>
+    </div>
+  </div>`;
+}
+
+/* ================= HOME ================= */
+function renderHome(){
+  const featured = SKILLS.filter(s=>s.featured);
+  const trending = [...SKILLS].sort((a,b)=>a.trendRank-b.trendRank).slice(0,4);
+  const topDesigners = Object.entries(DESIGNERS).sort((a,b)=>b[1].earnings-a[1].earnings);
+  return `
+  <div class="hero">
+    <h1>Powerups for your LLM.<br><span class="grad">Built by the best designers.</span></h1>
+    <p>Skills, datasets, avatars, prompt packs &amp; fine-tuned models for ChatGPT, Claude, and beyond. Everything scanned &amp; verified. Every designer paid.</p>
+    <div class="hero-search">
+      <span style="color:var(--faint)">⌕</span>
+      <input id="heroSearch" placeholder="Search skills — try 'data analysis' or 'debugging'..."
+        onkeydown="if(event.key==='Enter'){state.search=this.value;go('browse')}">
+      <button class="btn btn-primary" onclick="state.search=$('heroSearch').value;go('browse')">Search</button>
+    </div>
+    <div class="hero-stats">
+      <div class="hero-stat"><div class="n">520+</div><div class="l">Assets</div></div>
+      <div class="hero-stat"><div class="n">5</div><div class="l">Product lines</div></div>
+      <div class="hero-stat"><div class="n">82k</div><div class="l">Subscribers</div></div>
+      <div class="hero-stat"><div class="n">$1.2M</div><div class="l">Paid to designers</div></div>
+      <div class="hero-stat"><div class="n">100%</div><div class="l">Scanned &amp; verified</div></div>
+    </div>
+  </div>
+  <div class="page" style="padding-top:0">
+    <div class="section-head">
+      <div><div class="section-title">✦ Hand-picked by our team</div>
+      <div class="section-sub">Featured skills our curators love this month</div></div>
+      <a class="see-all" onclick="go('browse')">Browse all →</a>
+    </div>
+    <div class="grid grid-4">${featured.map(skillCard).join('')}</div>
+
+    <div class="section-head">
+      <div><div class="section-title">🔥 Trending now</div>
+      <div class="section-sub">Most downloaded this week</div></div>
+      <a class="see-all" onclick="state.sort='downloads';go('browse')">See all →</a>
+    </div>
+    <div class="grid grid-4">${trending.map(skillCard).join('')}</div>
+
+    <div class="section-head">
+      <div><div class="section-title">🧬 New product lines</div>
+      <div class="section-sub">Datasets for training, avatars to rent or own, models &amp; prompt packs</div></div>
+      <a class="see-all" onclick="state.typeF='dataset';go('browse')">Explore →</a>
+    </div>
+    <div class="grid grid-4">${['ds1','av1','md1','pp1'].map(id=>skillCard(SKILLS.find(s=>s.id===id))).join('')}</div>
+
+    <div class="section-head">
+      <div><div class="section-title">🏆 Top designers</div>
+      <div class="section-sub">Creators earning the showcase spotlight</div></div>
+    </div>
+    <div class="grid grid-4">
+      ${topDesigners.map(([id,d])=>`
+      <div class="skill-card" onclick="go('browse')">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div class="avatar" style="background:${d.color};width:42px;height:42px;font-size:15px">${d.avatar}</div>
+          <div><div class="skill-name">${d.name}</div><div class="skill-by">${d.handle}</div></div>
+        </div>
+        <div class="skill-meta" style="margin-top:4px">
+          <span><b>${d.skills}</b> skills</span>
+          <span><b>${money(d.earnings)}</b> earned</span>
+          <span class="badge badge-tier">${d.share}% share</span>
+        </div>
+      </div>`).join('')}
+    </div>
+
+    <div class="panel" style="margin-top:52px;display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap;background:linear-gradient(120deg,var(--accent-dim),transparent);border-color:var(--accent)">
+      <div>
+        <div style="font-size:19px;font-weight:750;letter-spacing:-.01em">Build skills. Earn up to 80% of every subscription dollar.</div>
+        <div style="color:var(--muted);font-size:14px;margin-top:5px">Upload your skill, pass the security scan, get featured. Payouts monthly.</div>
+      </div>
+      <button class="btn btn-primary btn-lg" onclick="go('upload')">Become a designer</button>
+    </div>
+  </div>`;
+}
+
+/* ================= BROWSE ================= */
+function filteredSkills(){
+  let list = SKILLS.filter(s=>{
+    if(state.typeF !== 'All' && s.type !== state.typeF) return false;
+    if(state.cat !== 'All' && s.category !== state.cat) return false;
+    if(state.tierF !== 'All' && s.tier !== state.tierF) return false;
+    if(state.llmF !== 'All' && !s.llms.includes(state.llmF)) return false;
+    if(state.search){
+      const q = state.search.toLowerCase();
+      if(!(s.name+s.desc+s.category+DESIGNERS[s.designer].name).toLowerCase().includes(q)) return false;
+    }
+    return true;
+  });
+  const sorts = {
+    trending:(a,b)=>a.trendRank-b.trendRank,
+    downloads:(a,b)=>b.downloads-a.downloads,
+    upvotes:(a,b)=>b.upvotes-a.upvotes,
+    rating:(a,b)=>b.rating-a.rating,
+    newest:(a,b)=>b.updated.localeCompare(a.updated),
+    security:(a,b)=>b.score-a.score,
+  };
+  return list.sort(sorts[state.sort]);
+}
+function renderBrowse(){
+  const list = filteredSkills();
+  return `
+  <div class="page">
+    <h1 style="font-size:30px;font-weight:800;letter-spacing:-.025em">Browse the marketplace</h1>
+    <p style="color:var(--muted);margin:6px 0 22px">${SKILLS.length} assets · all scanned &amp; verified · prioritized for ChatGPT &amp; Claude</p>
+    <div class="chip-row" style="margin-bottom:18px">
+      ${[['All','All products'],['skill','Skills'],['prompt','Prompts'],['dataset','Datasets'],['avatar','Avatars'],['voice','Voices'],['model','Models'],['mcp','MCP Connectors'],['workflow','Workflows'],['rag','RAG Packs'],['eval','Eval Suites'],['assets','Asset Packs']]
+        .map(([v,l])=>`<button class="chip ${state.typeF===v?'on':''}" onclick="state.typeF='${v}';render()">${l}</button>`).join('')}
+    </div>
+    <div class="filter-bar">
+      <input type="search" placeholder="Search skills, designers, categories..." value="${esc(state.search)}"
+        oninput="state.search=this.value;renderPartial()">
+      <select onchange="state.tierF=this.value;renderPartial()">
+        <option ${state.tierF==='All'?'selected':''} value="All">All tiers</option>
+        ${TIERS.map(t=>`<option ${state.tierF===t?'selected':''}>${t}</option>`).join('')}
+      </select>
+      <select onchange="state.llmF=this.value;renderPartial()">
+        <option ${state.llmF==='All'?'selected':''} value="All">All LLMs</option>
+        ${LLMS.map(l=>`<option ${state.llmF===l?'selected':''}>${l}</option>`).join('')}
+      </select>
+      <select onchange="state.sort=this.value;renderPartial()">
+        <option value="trending" ${state.sort==='trending'?'selected':''}>Trending</option>
+        <option value="downloads" ${state.sort==='downloads'?'selected':''}>Most downloaded</option>
+        <option value="upvotes" ${state.sort==='upvotes'?'selected':''}>Most upvoted</option>
+        <option value="rating" ${state.sort==='rating'?'selected':''}>Highest rated</option>
+        <option value="security" ${state.sort==='security'?'selected':''}>Security score</option>
+        <option value="newest" ${state.sort==='newest'?'selected':''}>Newest</option>
+      </select>
+    </div>
+    <div class="chip-row">
+      <button class="chip ${state.cat==='All'?'on':''}" onclick="state.cat='All';renderPartial()">All</button>
+      ${CATEGORIES.map(c=>`<button class="chip ${state.cat===c?'on':''}" onclick="state.cat='${c}';renderPartial()">${c}</button>`).join('')}
+    </div>
+    <div id="browseGrid">
+      ${list.length ? `<div class="grid grid-3">${list.map(skillCard).join('')}</div>`
+        : `<div class="empty">No skills match those filters.<br><button class="btn btn-ghost btn-sm" style="margin-top:14px" onclick="state.search='';state.cat='All';state.tierF='All';state.llmF='All';renderPartial()">Clear filters</button></div>`}
+    </div>
+  </div>`;
+}
+function renderPartial(){
+  // re-render only the browse page grid + chips without losing input focus
+  if(state.route !== 'browse'){ render(); return; }
+  const grid = $('browseGrid');
+  const list = filteredSkills();
+  grid.innerHTML = list.length ? `<div class="grid grid-3">${list.map(skillCard).join('')}</div>`
+    : `<div class="empty">No skills match those filters.<br><button class="btn btn-ghost btn-sm" style="margin-top:14px" onclick="state.search='';state.cat='All';state.tierF='All';state.llmF='All';render()">Clear filters</button></div>`;
+  document.querySelectorAll('.chip-row .chip').forEach((el,i)=>{
+    const label = i===0 ? 'All' : CATEGORIES[i-1];
+    el.classList.toggle('on', state.cat === label);
+  });
+}
+
+/* ================= SKILL DETAIL ================= */
+function copyText(btn, text){
+  navigator.clipboard?.writeText(text).then(()=>{ btn.textContent='Copied ✓'; setTimeout(()=>btn.textContent='Copy',1500); })
+    .catch(()=>{ btn.textContent='Copied ✓'; setTimeout(()=>btn.textContent='Copy',1500); });
+}
+function setTab(t){ state.detailTab = t; render(); }
+function downloadSkill(id){
+  const s = SKILLS.find(x=>x.id===id);
+  if(!state.subActive){ toast('⚠️ Your subscription has lapsed — reactivate to download.'); return; }
+  if(!canDownload(s)){ toast(`🔒 Requires the ${s.tier} plan or higher.`); return; }
+  state.downloaded.add(id);
+  s.downloads++;
+  toast(`✅ ${s.name} licensed to your account — key issued.`);
+  render();
+}
+function buyWithCredits(id){
+  const s = SKILLS.find(x=>x.id===id);
+  if(!state.subActive){ toast('⚠️ Reactivate your subscription to use credits.'); return; }
+  if(state.credits < s.credits){ toast(`Not enough credits — need ⬡${s.credits}, you have ⬡${state.credits}. Upgrade for more.`); return; }
+  state.credits -= s.credits; state.downloaded.add(id); s.downloads++;
+  toast(`✅ ${s.name} licensed — ⬡${s.credits} credits used. Balance: ⬡${state.credits}.`);
+  render();
+}
+function rentAvatar(id){
+  const s = SKILLS.find(x=>x.id===id);
+  if(!state.subActive){ toast('⚠️ Reactivate your subscription to rent avatars.'); return; }
+  if(state.credits < s.rent){ toast(`Not enough credits — rental costs ⬡${s.rent}/mo, you have ⬡${state.credits}.`); return; }
+  state.credits -= s.rent; state.rented.add(id); s.downloads++;
+  toast(`✅ Renting ${s.name} — ⬡${s.rent}/mo from your credit allowance.`);
+  render();
+}
+function buyoutAvatar(id){
+  const s = SKILLS.find(x=>x.id===id);
+  if(!state.subActive){ toast('⚠️ Reactivate your subscription to purchase.'); return; }
+  if(state.credits < s.buyout){ toast(`Buyout costs ⬡${s.buyout} — you have ⬡${state.credits}. Top up credits in Billing.`); return; }
+  state.credits -= s.buyout; state.rented.delete(id); state.ownedForever.add(id); s.downloads++;
+  toast(`🎉 ${s.name} is exclusively yours — perpetual license, delisted for everyone else.`);
+  render();
+}
+function requestRescan(id){
+  const s = SKILLS.find(x=>x.id===id);
+  s.security.scanned = new Date().toISOString().slice(0,10);
+  toast(`🛡 Re-scan queued for ${s.name}. Results in ~2 min.`);
+  render();
+}
+function ringColor(score){ return score>=90?'var(--green)':score>=75?'var(--yellow)':'var(--red)'; }
+function checkIcon(st){
+  if(st==='pass') return `<div class="check-ico" style="background:var(--green-dim);color:var(--green)">✓</div>`;
+  if(st==='warn') return `<div class="check-ico" style="background:var(--yellow-dim);color:var(--yellow)">!</div>`;
+  return `<div class="check-ico" style="background:var(--red-dim);color:var(--red)">✕</div>`;
+}
+
+function renderSkill(){
+  const s = SKILLS.find(x=>x.id===state.routeArg);
+  if(!s) return `<div class="page"><div class="empty">Skill not found.</div></div>`;
+  const d = designerOf(s);
+  const voted = state.upvoted.has(s.id);
+  const owned = state.downloaded.has(s.id);
+  const allowed = canDownload(s);
+  const tab = state.detailTab;
+
+  let dlBtn;
+  if(RENTAL_TYPES.includes(s.type)){
+    const isOwned = state.ownedForever.has(s.id), isRented = state.rented.has(s.id);
+    if(isOwned) dlBtn = `<button class="btn btn-ghost" style="width:100%" disabled>✓ Owned — exclusive, perpetual</button>`;
+    else if(isRented && state.subActive) dlBtn = `<button class="btn btn-ghost" style="width:100%" disabled>✓ Renting · ⬡${s.rent}/mo</button>
+      <button class="btn btn-primary" style="width:100%" onclick="buyoutAvatar('${s.id}')">★ Buy out · ⬡${s.buyout} (exclusive)</button>`;
+    else if(isRented && !state.subActive) dlBtn = `<button class="btn btn-danger" style="width:100%" onclick="go('billing')">⚠ Rental deactivated — reactivate</button>`;
+    else dlBtn = `<button class="btn btn-primary" style="width:100%" onclick="rentAvatar('${s.id}')">Rent · ⬡${s.rent}/month</button>
+      <button class="btn btn-ghost" style="width:100%" onclick="buyoutAvatar('${s.id}')">★ Buy out · ⬡${s.buyout} (exclusive)</button>`;
+  }
+  else if(CREDIT_TYPES.includes(s.type)){
+    if(owned && state.subActive) dlBtn = `<button class="btn btn-ghost" style="width:100%" disabled>✓ Licensed to you</button>`;
+    else if(owned && !state.subActive) dlBtn = `<button class="btn btn-danger" style="width:100%" onclick="go('billing')">⚠ License deactivated — reactivate</button>`;
+    else dlBtn = `<button class="btn btn-primary" style="width:100%" onclick="buyWithCredits('${s.id}')">⬡ Get for ${s.credits} credits</button>
+      <div style="font-size:12px;color:var(--faint);text-align:center">Your balance: ⬡ ${state.credits}</div>`;
+  }
+  else {
+    if(owned && state.subActive) dlBtn = `<button class="btn btn-ghost" style="width:100%" disabled>✓ Licensed to you</button>`;
+    else if(owned && !state.subActive) dlBtn = `<button class="btn btn-danger" style="width:100%" onclick="go('billing')">⚠ License deactivated — reactivate</button>`;
+    else if(allowed) dlBtn = `<button class="btn btn-primary" style="width:100%" onclick="downloadSkill('${s.id}')">⬇ Download ${TYPE_META[s.type].label.toLowerCase()}</button>`;
+    else dlBtn = `<button class="btn btn-ghost" style="width:100%" onclick="go('pricing')">🔒 Requires ${s.tier} — upgrade</button>`;
+  }
+
+  const tabContent = {
+    overview: `
+      <div class="docs">
+        <p style="font-size:15.5px;color:var(--text)">${s.docs.overview}</p>
+        <h2>How it works</h2>
+        <p>${s.docs.usage}</p>
+        <h2>Example runs</h2>
+        ${s.docs.examples.map(e=>`
+          <div class="panel" style="margin:12px 0;padding:18px">
+            <div style="font-size:13px;color:var(--accent);font-weight:650;margin-bottom:6px">PROMPT</div>
+            <div style="font-weight:550">"${e.q}"</div>
+            <div style="font-size:13px;color:var(--accent);font-weight:650;margin:14px 0 6px">RESULT</div>
+            <div style="color:var(--muted);font-size:14px">${e.a}</div>
+          </div>`).join('')}
+      </div>`,
+    docs: `
+      <div class="docs">
+        <h2>Installation</h2>
+        <p>Install with the skillz CLI. Your license key is validated on every load — if your subscription lapses, the skill is deactivated until you renew.</p>
+        <div class="codeblock"><button class="copy-btn" onclick="copyText(this, \`${s.docs.install}\`)">Copy</button>${s.docs.install}</div>
+        <h3>Or add manually</h3>
+        <div class="codeblock"><button class="copy-btn" onclick="copyText(this, 'skillz pull ${s.id} && skillz activate --key $SKILLZ_LICENSE')">Copy</button>skillz pull ${s.id}<br>skillz activate --key $SKILLZ_LICENSE</div>
+        <h2>Usage</h2>
+        <p>${s.docs.usage}</p>
+        <h2>Compatibility</h2>
+        <ul>
+          ${s.llms.length ? s.llms.map(l=>`<li><b style="color:var(--text)">${l}</b> — fully supported${(l==='ChatGPT'||l==='Claude')?' (priority target)':''}</li>`).join('')
+            : `<li><b style="color:var(--text)">Platform-agnostic</b> — exports standard formats (${s.meta?s.meta[0][1]:'MP4/WAV'}) usable in any pipeline</li>`}
+        </ul>
+        <p style="font-size:13px;border-left:3px solid var(--accent);padding-left:12px">Prioritized for ChatGPT and Claude. Other providers receive best-effort compatibility testing.</p>
+        <h2>Versioning</h2>
+        <p>Current version <code>${s.version}</code>, updated ${s.updated}. Updates are free while your subscription is active.</p>
+      </div>`,
+    security: `
+      <div style="display:flex;gap:28px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+        <div class="score-ring">
+          <svg width="120" height="120">
+            <circle cx="60" cy="60" r="52" fill="none" stroke="var(--surface2)" stroke-width="9"/>
+            <circle cx="60" cy="60" r="52" fill="none" stroke="${ringColor(s.score)}" stroke-width="9"
+              stroke-linecap="round" stroke-dasharray="${(s.score/100)*326.7} 326.7"/>
+          </svg>
+          <div class="score-num"><div class="n">${s.score}</div><div class="d">/ 100</div></div>
+        </div>
+        <div style="flex:1;min-width:240px">
+          <div style="font-size:17px;font-weight:700">${s.score>=90?TYPE_META[s.type].v90:s.score>=75?'Review advised':'Issues found'}</div>
+          <div style="color:var(--muted);font-size:13.5px;margin-top:5px">${TYPE_META[s.type].scanDesc} Last scanned ${s.security.scanned}.</div>
+          <button class="btn btn-ghost btn-sm" style="margin-top:12px" onclick="requestRescan('${s.id}')">↻ Request re-scan</button>
+        </div>
+      </div>
+      <div class="panel" style="padding:8px 20px">
+        ${s.security.checks.map(c=>`
+          <div class="check-item">
+            ${checkIcon(c.status)}
+            <div>
+              <div style="font-weight:600;font-size:14px">${c.name}</div>
+              <div style="color:var(--muted);font-size:13px;margin-top:2px">${c.note}</div>
+            </div>
+          </div>`).join('')}
+      </div>
+      <div class="banner banner-info" style="margin-top:16px;font-size:12.5px;align-items:flex-start">
+        <span>🔒</span>
+        <div><b>Forensic protection on download:</b> ${WM_METHOD[s.type]||'Zero-width text steganography'}.<br>
+        Every copy you download is individually fingerprinted to your account and registered (timestamp + IP). If this file is leaked, we trace it back to the source account.</div>
+      </div>
+      <p style="color:var(--faint);font-size:12.5px;margin-top:14px">Items scoring 90+ earn the ${TYPE_META[s.type].v90} badge. Deep static scan (engine v2.0) covers obfuscation, recursive payload decoding, credential leakage, and exfiltration. Critical findings block publication; a dynamic sandbox pass runs post-publish.</p>`,
+  };
+
+  return `
+  <div class="page">
+    <a class="crumb" onclick="go('browse')">← Back to browse</a>
+    <div class="detail-grid">
+      <div>
+        <div style="display:flex;gap:18px;align-items:flex-start">
+          <div class="skill-icon" style="width:64px;height:64px;font-size:30px;border-radius:16px">${s.icon}</div>
+          <div style="flex:1">
+            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+              <h1 style="font-size:26px;font-weight:800;letter-spacing:-.02em">${s.name}</h1>
+              ${scoreBadge(s.score, s.type)}
+            </div>
+            <div style="color:var(--muted);font-size:14px;margin-top:3px">${TYPE_META[s.type].label} by <b style="color:var(--text)">${d.name}</b> ${d.handle} · v${s.version}</div>
+            <div class="llm-row" style="margin-top:10px">${s.format?`<span class="badge badge-llm">${s.format}</span>`:llmBadges(s.llms)}${priceBadge(s)}</div>
+          </div>
+        </div>
+        <p style="color:var(--muted);margin-top:18px;font-size:15px">${s.desc}</p>
+        <div class="tabs">
+          <button class="tab ${tab==='overview'?'on':''}" onclick="setTab('overview')">Overview &amp; Examples</button>
+          <button class="tab ${tab==='docs'?'on':''}" onclick="setTab('docs')">Documentation</button>
+          <button class="tab ${tab==='security'?'on':''}" onclick="setTab('security')">${TYPE_META[s.type].report}</button>
+        </div>
+        ${tabContent[tab]}
+      </div>
+      <div style="display:flex;flex-direction:column;gap:16px;position:sticky;top:80px">
+        <div class="sidebar-card">
+          ${dlBtn}
+          <button class="upvote ${voted?'voted':''}" style="justify-content:center;padding:9px" onclick="toggleUpvote(event,'${s.id}')">▲ Upvote · ${fmt(s.upvotes)}</button>
+          <div>
+            ${(s.meta||[]).map(([k,v])=>`<div class="meta-row"><span class="k">${k}</span><span class="v">${v}</span></div>`).join('')}
+            <div class="meta-row"><span class="k">Downloads</span><span class="v">${s.downloads.toLocaleString()}</span></div>
+            <div class="meta-row"><span class="k">Rating</span><span class="v">★ ${s.rating}</span></div>
+            <div class="meta-row"><span class="k">Category</span><span class="v">${s.category}</span></div>
+            <div class="meta-row"><span class="k">Version</span><span class="v">${s.version}</span></div>
+            <div class="meta-row"><span class="k">Updated</span><span class="v">${s.updated}</span></div>
+            ${s.meta?'':`<div class="meta-row"><span class="k">Size</span><span class="v">${s.sizeKb} KB</span></div>`}
+            <div class="meta-row"><span class="k">Last scan</span><span class="v">${s.security.scanned}</span></div>
+            <div class="meta-row"><span class="k">License</span><span class="v">${RENTAL_TYPES.includes(s.type)?'Rental or buyout':'Subscription-bound'}</span></div>
+          </div>
+        </div>
+        <div class="banner banner-info" style="margin:0;font-size:12.5px">${RENTAL_TYPES.includes(s.type)
+          ?'ℹ️ Rentals deactivate if your subscription lapses. Buyouts are perpetual, exclusive, and survive cancellation.'
+          :'ℹ️ Licensed items validate against your subscription. If it lapses, they deactivate until you renew.'}</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ================= PRICING ================= */
+function planPrice(p){
+  if(p.mo === 0) return {num:'$0', per:''};
+  const v = state.annual ? p.mo*0.8 : p.mo;
+  return {num:'$'+v.toFixed(2), per:'/mo' + (state.annual?' billed annually':'')};
+}
+function choosePlan(id){
+  if(id === state.plan && state.subActive){ toast('You\'re already on this plan.'); return; }
+  const np = PLANS.find(p=>p.id===id);
+  state.plan = id; state.subActive = true;
+  state.renewal = '2026-07-12';
+  state.credits = np.credits;
+  toast(`✅ Switched to the ${np.name} plan${np.credits?` — ⬡${np.credits} credits refilled`:''}.`);
+  render();
+}
+function renderPricing(){
+  return `
+  <div class="page" style="max-width:1080px">
+    <div style="text-align:center">
+      <h1 style="font-size:34px;font-weight:800;letter-spacing:-.03em">Simple pricing. Serious powerups.</h1>
+      <p style="color:var(--muted);margin-top:8px">Every plan includes security-scanned skills and designer revenue sharing.</p>
+      <div class="pricing-toggle">
+        <span style="color:${state.annual?'var(--muted)':'var(--text)'}">Monthly</span>
+        <div class="switch ${state.annual?'on':''}" onclick="state.annual=!state.annual;render()"><div class="knob"></div></div>
+        <span style="color:${state.annual?'var(--text)':'var(--muted)'}">Annual</span>
+        <span class="save-tag">Save 20%</span>
+      </div>
+    </div>
+    <div class="grid grid-4" style="align-items:stretch">
+      ${PLANS.map(p=>{
+        const pr = planPrice(p);
+        const current = state.plan===p.id && state.subActive;
+        return `
+        <div class="price-card ${p.popular?'popular':''}">
+          ${p.popular?'<div class="pop-tag">Most popular</div>':''}
+          <div>
+            <div style="font-weight:700;font-size:16px">${p.name}</div>
+            <div class="price-num">${pr.num}<span class="per">${pr.per}</span></div>
+            <div style="font-size:13px;color:var(--accent);font-weight:650;margin-top:3px">${p.skills}</div>
+          </div>
+          <div class="feat-list">${p.feats.map(f=>`<div class="f">${f}</div>`).join('')}</div>
+          <button class="btn ${current?'btn-ghost':p.popular?'btn-primary':'btn-ghost'}" style="margin-top:auto" ${current?'disabled':''}
+            onclick="choosePlan('${p.id}')">${current?'Current plan':'Choose '+p.name}</button>
+        </div>`;
+      }).join('')}
+    </div>
+    <div class="panel" style="margin-top:34px">
+      <div style="font-weight:700;margin-bottom:8px">How licensing &amp; credits work</div>
+      <p style="color:var(--muted);font-size:14px;line-height:1.65">
+        Skills and prompt packs are covered by your subscription tier. Big-ticket items — datasets, models, and avatars — use
+        <b style="color:var(--text)">⬡ credits</b>, included monthly with paid plans (top-ups available). Every license validates against your subscription when loaded:
+        if it lapses, subscription items and avatar rentals are <b style="color:var(--text)">deactivated</b> until you reactivate.
+        The one exception: avatar <b style="color:var(--text)">buyouts</b> are perpetual, exclusive, and yours forever.
+        Upgrade or downgrade anytime; items above your new tier's limit are paused, never deleted.
+      </p>
+    </div>
+  </div>`;
+}
+
+/* ================= BILLING ================= */
+function cancelSub(){
+  state.subActive = false;
+  toast('Subscription cancelled. Skill licenses and avatar rentals deactivated — buyouts remain yours.');
+  render();
+}
+function reactivate(){
+  state.subActive = true;
+  state.renewal = '2026-07-12';
+  toast('✅ Welcome back! All skill licenses reactivated.');
+  render();
+}
+function renderBilling(){
+  const p = PLANS.find(x=>x.id===state.plan);
+  const pr = planPrice(p);
+  const owned = SKILLS.filter(s=>state.downloaded.has(s.id) || state.rented.has(s.id) || state.ownedForever.has(s.id));
+  const licStatus = s => state.ownedForever.has(s.id)
+    ? '<span class="pos">● Perpetual (buyout)</span>'
+    : state.subActive
+      ? (state.rented.has(s.id)?'<span class="pos">● Renting</span>':'<span class="pos">● Active</span>')
+      : '<span class="neg">● Deactivated</span>';
+  return `
+  <div class="page" style="max-width:860px">
+    <h1 style="font-size:28px;font-weight:800;letter-spacing:-.025em">Subscription &amp; billing</h1>
+    <p style="color:var(--muted);margin:6px 0 26px">Manage your plan, payment, and skill licenses.</p>
+    ${!state.subActive?`<div class="banner banner-danger">⚠️ Your subscription is cancelled. All downloaded skills are <b>deactivated</b> and will not load until you reactivate.
+      <button class="btn btn-primary btn-sm" style="margin-left:auto" onclick="reactivate()">Reactivate</button></div>`:''}
+    <div class="panel" style="margin-bottom:18px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:16px">
+        <div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="font-size:20px;font-weight:750">${p.name} plan</span>
+            <span class="badge ${state.subActive?'badge-safe':'badge-risk'}">${state.subActive?'● Active':'● Cancelled'}</span>
+          </div>
+          <div style="color:var(--muted);font-size:14px;margin-top:5px">
+            ${p.mo===0?'Free forever':`${pr.num}${pr.per}`} · ${p.skills} active licenses
+            ${state.subActive && p.mo>0?` · renews <b style="color:var(--text)">${state.renewal}</b>`:''}
+          </div>
+        </div>
+        <div style="display:flex;gap:10px">
+          <button class="btn btn-ghost" onclick="go('pricing')">Change plan</button>
+          ${state.subActive && p.mo>0?`<button class="btn btn-danger" onclick="cancelSub()">Cancel</button>`:''}
+        </div>
+      </div>
+    </div>
+    <div class="panel" style="margin-bottom:18px">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px">
+        <div>
+          <div style="font-weight:700">Marketplace credits</div>
+          <div style="color:var(--muted);font-size:13px;margin-top:4px">For datasets, models, avatar rentals &amp; buyouts · refills ${state.subActive&&p.credits?`⬡${p.credits} on ${state.renewal}`:'with an active paid plan'}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:16px">
+          <div style="font-size:26px;font-weight:800;color:var(--accent)">⬡ ${state.credits}</div>
+          <button class="btn btn-ghost btn-sm" onclick="topUp()">+ Top up ⬡50 · $14.99</button>
+        </div>
+      </div>
+    </div>
+    <div class="panel" style="margin-bottom:18px">
+      <div style="font-weight:700;margin-bottom:14px">Payment method</div>
+      <div style="display:flex;align-items:center;gap:14px">
+        <div style="width:44px;height:30px;border-radius:6px;background:linear-gradient(135deg,#1a1f71,#2557d6);display:flex;align-items:center;justify-content:center;color:#fff;font-size:9px;font-weight:800">VISA</div>
+        <div><div style="font-weight:600;font-size:14px">•••• 4242</div><div style="color:var(--faint);font-size:12.5px">Expires 09/28</div></div>
+        <button class="btn btn-ghost btn-sm" style="margin-left:auto" onclick="toast('Payment update flow would open here.')">Update</button>
+      </div>
+    </div>
+    <div class="panel" style="margin-bottom:18px">
+      <div style="font-weight:700;margin-bottom:6px">Your licenses (${owned.length})</div>
+      <div style="color:var(--muted);font-size:13px;margin-bottom:10px">Subscription-bound licenses validate on every load. Buyouts are perpetual and survive cancellation.</div>
+      <table>
+        <tr><th>Item</th><th>Type</th><th>License key</th><th>Status</th></tr>
+        ${owned.map(s=>`
+        <tr style="cursor:pointer" onclick="go('skill','${s.id}')">
+          <td><b>${s.icon} ${s.name}</b></td>
+          <td><span class="badge badge-tier">${TYPE_META[s.type].label}</span></td>
+          <td class="mut" style="font-family:monospace;font-size:12px">sk-live-${s.id}••••${s.id.slice(1)}f2</td>
+          <td>${licStatus(s)}</td>
+        </tr>`).join('')}
+        ${owned.length===0?'<tr><td colspan="4" class="mut">Nothing licensed yet.</td></tr>':''}
+      </table>
+    </div>
+    <div class="panel">
+      <div style="font-weight:700;margin-bottom:10px">Billing history</div>
+      <table>
+        <tr><th>Date</th><th>Description</th><th>Amount</th><th>Status</th></tr>
+        <tr><td>2026-06-12</td><td>Pro plan — monthly</td><td>$24.99</td><td class="pos">Paid</td></tr>
+        <tr><td>2026-05-12</td><td>Pro plan — monthly</td><td>$24.99</td><td class="pos">Paid</td></tr>
+        <tr><td>2026-04-12</td><td>Starter plan — monthly</td><td>$9.99</td><td class="pos">Paid</td></tr>
+        <tr><td>2026-03-12</td><td>Starter plan — monthly</td><td>$9.99</td><td class="pos">Paid</td></tr>
+      </table>
+    </div>
+  </div>`;
+}
+
+/* ================= DESIGNER DASHBOARD ================= */
+function renderDashboard(){
+  const me = DESIGNERS.d1; // demo: you are Maya
+  const mySkills = SKILLS.filter(s=>s.designer==='d1');
+  const monthly = [
+    {m:'Jan', amt:1240},{m:'Feb', amt:1610},{m:'Mar', amt:2080},
+    {m:'Apr', amt:2890},{m:'May', amt:3420},{m:'Jun', amt:1830},
+  ];
+  const max = Math.max(...monthly.map(x=>x.amt));
+  return `
+  <div class="page" style="max-width:1020px">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;margin-bottom:26px">
+      <div>
+        <h1 style="font-size:28px;font-weight:800;letter-spacing:-.025em">Designer dashboard</h1>
+        <p style="color:var(--muted);margin-top:5px">Signed in as ${me.name} ${me.handle} · <span class="badge badge-tier">${me.share}% revenue share</span></p>
+      </div>
+      <button class="btn btn-primary" onclick="go('upload')">+ Upload new skill</button>
+    </div>
+    ${window.LIVE ? `<div class="panel" style="margin-bottom:18px;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;background:linear-gradient(120deg,var(--accent-dim),transparent)">
+      <div>
+        <div style="font-weight:700">💸 Designer payouts ${state.connectStatus==='active'?'<span class="badge badge-safe">● Connected</span>':'<span class="badge badge-warn">● Not set up</span>'}</div>
+        <div style="color:var(--muted);font-size:13px;margin-top:4px">${state.connectStatus==='active'?'Your account is connected. Monthly payouts deposit automatically at your revenue-share rate.':'Connect a payout account to receive your 60–80% revenue share automatically each month.'}</div>
+      </div>
+      ${state.connectStatus==='active'?'':'<button class="btn btn-primary" onclick="setupPayouts()">Set up payouts</button>'}
+    </div>` : ''}
+    <div class="stat-grid">
+      <div class="stat-card"><div class="l">Lifetime earnings</div><div class="n">${money(me.earnings)}</div><div class="s pos">↑ 18% vs last quarter</div></div>
+      <div class="stat-card"><div class="l">June earnings</div><div class="n">$1,830</div><div class="s mut">payout July 1</div></div>
+      <div class="stat-card"><div class="l">Total downloads</div><div class="n">${fmt(mySkills.reduce((a,s)=>a+s.downloads,0))}</div><div class="s pos">↑ 2.4k this week</div></div>
+      <div class="stat-card"><div class="l">Avg security score</div><div class="n">${Math.round(mySkills.reduce((a,s)=>a+s.score,0)/mySkills.length)}</div><div class="s" style="color:var(--green)">Verified Safe</div></div>
+    </div>
+    <div class="panel" style="margin-bottom:18px">
+      <div style="font-weight:700;margin-bottom:18px">Earnings — last 6 months</div>
+      <div style="display:flex;align-items:flex-end;gap:14px;height:140px">
+        ${monthly.map(x=>`
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:7px;height:100%;justify-content:flex-end">
+            <div style="font-size:11.5px;color:var(--muted);font-weight:600">$${(x.amt/1000).toFixed(1)}k</div>
+            <div style="width:100%;max-width:54px;border-radius:8px 8px 3px 3px;height:${(x.amt/max)*100*0.78}%;background:linear-gradient(180deg,var(--accent),var(--accent2));opacity:${x.m==='Jun'?1:.55}"></div>
+            <div style="font-size:11.5px;color:var(--faint)">${x.m}</div>
+          </div>`).join('')}
+      </div>
+    </div>
+    <div class="panel" style="margin-bottom:18px">
+      <div style="font-weight:700;margin-bottom:10px">Your skills — performance</div>
+      <table>
+        <tr><th>Skill</th><th>Downloads</th><th>Upvotes</th><th>Rating</th><th>Security</th><th>June rev.</th></tr>
+        ${mySkills.map(s=>`
+        <tr style="cursor:pointer" onclick="go('skill','${s.id}')">
+          <td><b>${s.icon} ${s.name}</b> <span class="mut">v${s.version}</span></td>
+          <td>${s.downloads.toLocaleString()}</td>
+          <td>${fmt(s.upvotes)}</td>
+          <td>★ ${s.rating}</td>
+          <td>${scoreBadge(s.score)}</td>
+          <td><b>${money([842,517,318,153][mySkills.indexOf(s)] || 120)}</b></td>
+        </tr>`).join('')}
+      </table>
+    </div>
+    <div class="panel">
+      <div style="font-weight:700;margin-bottom:10px">Payout history</div>
+      <table>
+        <tr><th>Date</th><th>Period</th><th>Gross attributed</th><th>Your share (${me.share}%)</th><th>Status</th></tr>
+        <tr><td>2026-06-01</td><td>May 2026</td><td>$4,275.00</td><td><b>$3,420.00</b></td><td class="pos">● Paid</td></tr>
+        <tr><td>2026-05-01</td><td>Apr 2026</td><td>$3,612.50</td><td><b>$2,890.00</b></td><td class="pos">● Paid</td></tr>
+        <tr><td>2026-04-01</td><td>Mar 2026</td><td>$2,600.00</td><td><b>$2,080.00</b></td><td class="pos">● Paid</td></tr>
+        <tr><td>2026-07-01</td><td>Jun 2026 (to date)</td><td>$2,287.50</td><td><b>$1,830.00</b></td><td style="color:var(--yellow)">● Pending</td></tr>
+      </table>
+      <p style="color:var(--faint);font-size:12.5px;margin-top:12px">Revenue attribution: subscription dollars are pooled monthly and split across skills by active-usage weight. Your share rate (${me.share}%) reflects your designer standing.</p>
+    </div>
+  </div>`;
+}
+
+/* ================= UPLOAD ================= */
+function toggleUploadLLM(l){
+  state.uploadLLMs.has(l) ? state.uploadLLMs.delete(l) : state.uploadLLMs.add(l);
+  render();
+}
+function startScan(){
+  const name = $('upName').value.trim();
+  if(!name){ toast('Give your skill a name first.'); return; }
+  state.pendingName = name;
+  state.scanState = {pct:0, log:[]};
+  render();
+  const steps = [
+    [12,'Unpacking skill bundle…'],
+    [28,'Static analysis: scanning for malicious code patterns… ✓ clean'],
+    [46,'Checking for data-exfiltration vectors (network calls, encoded payloads)… ✓ none found'],
+    [64,'Auditing dependencies against CVE database… ✓ 0 vulnerabilities'],
+    [82,'Verifying permission scoping… ✓ minimal permissions'],
+    [94,'Running prompt-injection resistance probes… ✓ passed'],
+    [100,'Scan complete — score: 96/100 · Verified Safe 🛡'],
+  ];
+  let i = 0;
+  const tick = () => {
+    if(i >= steps.length){ state.scanState.done = true; render(); return; }
+    state.scanState.pct = steps[i][0];
+    state.scanState.log.push(steps[i][1]);
+    i++; render();
+    setTimeout(tick, 650);
+  };
+  setTimeout(tick, 500);
+}
+function publishSkill(){
+  toast(`🎉 "${state.pendingName}" published! It's now live in the marketplace.`);
+  state.scanState = null; state.pendingName = null;
+  go('dashboard');
+}
+function renderUpload(){
+  if(state.scanState){
+    const sc = state.scanState;
+    return `
+    <div class="page" style="max-width:680px">
+      <h1 style="font-size:26px;font-weight:800;letter-spacing:-.02em">Security scan in progress</h1>
+      <p style="color:var(--muted);margin:6px 0 26px">Every skill is scanned before it can be published. This usually takes under a minute.</p>
+      <div class="panel">
+        <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:600;margin-bottom:9px">
+          <span>${sc.done?'✅ Scan complete':'Scanning "'+esc(state.pendingName)+'"…'}</span><span>${sc.pct}%</span>
+        </div>
+        <div class="progress-track"><div class="progress-fill" style="width:${sc.pct}%"></div></div>
+        <div style="margin-top:18px;font-family:ui-monospace,monospace;font-size:12.5px;line-height:2;color:var(--muted)">
+          ${sc.log.map(l=>`<div>› ${l}</div>`).join('')}
+        </div>
+        ${sc.done?`
+        <div style="display:flex;gap:12px;margin-top:22px;align-items:center">
+          ${sc.live && !sc.published
+            ? `<span class="badge ${sc.verdict==='needs_review'?'badge-warn':'badge-risk'}" style="font-size:12px">Score ${sc.score}/100 — ${sc.verdict==='needs_review'?'flagged for manual review':'blocked, fix critical issues'}</span>`
+            : `<button class="btn btn-primary" onclick="publishSkill()">${sc.live?'🚀 View live listing':'🚀 Publish to marketplace'}</button>`}
+          <button class="btn btn-ghost" onclick="state.scanState=null;render()">Back to edit</button>
+        </div>`:''}
+      </div>
+    </div>`;
+  }
+  return `
+  <div class="page" style="max-width:760px">
+    <h1 style="font-size:26px;font-weight:800;letter-spacing:-.02em">Upload to the marketplace</h1>
+    <p style="color:var(--muted);margin:6px 0 26px">Publish skills, prompt packs, datasets, avatars, or models to 82k subscribers. Every upload is auto-scanned — score 90+ to earn a verification badge.</p>
+    <div class="panel">
+      <div class="form-grid">
+        <div class="field"><label>Product type</label>
+          <select id="upType"><option>Skill</option><option>Prompt Pack</option><option>Dataset</option><option>Avatar</option><option>Fine-tuned Model / LoRA</option></select>
+          <span class="hint">Datasets get a quality audit; avatars get rights verification; models get eval &amp; license checks</span></div>
+        <div class="field"><label>Name</label><input id="upName" placeholder="e.g. SQL Whisperer"></div>
+        <div class="field"><label>Version</label><input id="upVer" placeholder="1.0.0" value="1.0.0"></div>
+        <div class="field full"><label>Description</label><textarea id="upDesc" placeholder="What does your skill make an LLM great at? One or two sentences."></textarea></div>
+        <div class="field"><label>Category</label><select id="upCat">${CATEGORIES.map(c=>`<option>${c}</option>`).join('')}</select></div>
+        <div class="field"><label>Tier level</label><select id="upTier"><option>Free</option><option>Starter</option><option selected>Pro</option><option>Enterprise</option></select>
+          <span class="hint">Determines which subscribers can license it</span></div>
+        <div class="field full"><label>LLM compatibility</label>
+          <div style="display:flex;gap:9px;flex-wrap:wrap">
+            ${LLMS.map(l=>`<div class="check-pill ${state.uploadLLMs.has(l)?'on':''}" onclick="toggleUploadLLM('${l}')">${state.uploadLLMs.has(l)?'✓ ':''}${l}${(l==='ChatGPT'||l==='Claude')?' ⭐':''}</div>`).join('')}
+          </div>
+          <span class="hint">⭐ Priority providers — we test these first</span></div>
+        <div class="field full"><label>Skill bundle</label>
+          <div style="border:1.5px dashed var(--border2);border-radius:12px;padding:30px;text-align:center;color:var(--muted);cursor:pointer;font-size:13.5px"
+            onclick="toast('File picker would open here — drop a .skill bundle.')">
+            📦 Drop your <code>.skill</code> bundle here or click to browse<br>
+            <span style="font-size:12px;color:var(--faint)">SKILL.md + assets, max 10 MB</span>
+          </div></div>
+        <div class="field full"><label>Documentation (markdown)</label><textarea id="upDocs" placeholder="## Installation&#10;## Usage&#10;## Examples" style="min-height:120px;font-family:ui-monospace,monospace;font-size:12.5px"></textarea></div>
+      </div>
+      <div style="display:flex;gap:12px;margin-top:24px;align-items:center">
+        <button class="btn btn-primary btn-lg" onclick="startScan()">Run security scan →</button>
+        <span style="font-size:12.5px;color:var(--faint)">Publishing requires a passing scan</span>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ================= ROUTER & INIT ================= */
+const ROUTES = {
+  home: renderHome, browse: renderBrowse, skill: renderSkill,
+  pricing: renderPricing, billing: renderBilling,
+  dashboard: renderDashboard, upload: renderUpload,
+  get admin(){ return renderAdmin; },
+};
+const NAV = [
+  ['home','Home'],['browse','Browse'],['pricing','Pricing'],
+  ['dashboard','Designer Studio'],['billing','Billing'],
+];
+function render(){
+  $('app').innerHTML = (ROUTES[state.route] || renderHome)();
+  const nav = NAV.concat(window.SESSION ? [['admin','Admin']] : []);
+  $('navLinks').innerHTML = nav.map(([r,label])=>
+    `<a class="nav-link ${state.route===r||(r==='browse'&&state.route==='skill')?'active':''}" onclick="go('${r}')">${label}</a>`).join('');
+  $('creditChip').textContent = '⬡ ' + state.credits;
+  const ab = $('authBtn');
+  if(ab) ab.textContent = window.LIVE ? (window.SESSION ? 'Sign out' : 'Sign in') : 'Demo';
+  $('planChip').textContent = state.subActive ? PLANS.find(p=>p.id===state.plan).name : 'Lapsed';
+  $('planChip').style.background = state.subActive ? 'var(--accent-dim)' : 'var(--red-dim)';
+  $('planChip').style.color = state.subActive ? 'var(--accent)' : 'var(--red)';
+  $('themeBtn').textContent = state.theme === 'dark' ? '☀️' : '🌙';
+}
+render();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+/* ================= LIVE BACKEND LAYER =================
+   Connects to the skillz.ai production backend (Supabase).
+   If unreachable, the app continues in demo mode with mock data. */
+const SUPA_URL = 'https://cvpkdnuqtpqxstglfjhb.supabase.co';
+const SUPA_KEY = 'sb_publishable_bdQ1gXbPZDVx2gjHOEYrww_0gko9Ryp';
+const TIER_NAME = {free:'Free', starter:'Starter', pro:'Pro', enterprise:'Enterprise'};
+let sb = null;
+window.LIVE = false; window.SESSION = null;
+
+function mapRow(r){
+  return {
+    id:r.id, type:r.type, icon:r.icon, name:r.name, desc:r.description,
+    category:r.category, tier:TIER_NAME[r.tier]||'Free', version:r.version,
+    designer:null, designerLabel:r.designer_label,
+    llms:r.llms||[], format:r.format||undefined,
+    credits:r.credits_price??undefined, rent:r.rent_price??undefined, buyout:r.buyout_price??undefined,
+    score:r.score, upvotes:r.upvotes, downloads:r.downloads, rating:Number(r.rating),
+    featured:r.featured, trendRank:r.trend_rank||999,
+    updated:(r.updated_at||'').slice(0,10), sizeKb:0,
+    meta:r.meta||undefined, docs:r.docs||{}, security:r.security||{scanned:'',checks:[]},
+  };
+}
+async function loadAccount(){
+  const {data:{session}} = await sb.auth.getSession();
+  window.SESSION = session;
+  if(!session) return;
+  const uid = session.user.id;
+  const [{data:prof},{data:lics},{data:votes}] = await Promise.all([
+    sb.from('profiles').select('*').eq('id',uid).single(),
+    sb.from('licenses').select('*').eq('user_id',uid),
+    sb.from('upvotes').select('product_id').eq('user_id',uid),
+  ]);
+  if(prof){
+    state.plan = prof.plan; state.subActive = prof.sub_active;
+    state.credits = prof.credits; state.renewal = prof.sub_renewal || state.renewal;
+    state.connectStatus = prof.connect_status || 'none';
+  }
+  state.downloaded = new Set(); state.rented = new Set(); state.ownedForever = new Set();
+  (lics||[]).forEach(l=>{
+    if(l.status==='perpetual') state.ownedForever.add(l.product_id);
+    else if(l.kind==='rental') state.rented.add(l.product_id);
+    else state.downloaded.add(l.product_id);
+  });
+  state.upvoted = new Set((votes||[]).map(v=>v.product_id));
+}
+async function initLive(){
+  if(!window.supabase) return;
+  try{
+    sb = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+    const {data, error} = await sb.from('products').select('*');
+    if(error || !data || !data.length) return;
+    window.LIVE = true;
+    SKILLS.length = 0;
+    data.sort((a,b)=>(a.trend_rank||999)-(b.trend_rank||999)).forEach(r=>SKILLS.push(mapRow(r)));
+    await loadAccount();
+    sb.auth.onAuthStateChange(async ()=>{ await loadAccount(); render(); });
+    render();
+    toast('🟢 Connected to skillz.ai live backend');
+  }catch(e){ /* stay in demo mode */ }
+}
+
+/* ---------- auth ---------- */
+function showAuth(){
+  const bg = document.createElement('div');
+  bg.className = 'modal-bg';
+  bg.onclick = e => { if(e.target===bg) bg.remove(); };
+  bg.innerHTML = `
+    <div class="modal">
+      <div style="font-size:19px;font-weight:750;margin-bottom:4px">Welcome to skillz.ai</div>
+      <div style="color:var(--muted);font-size:13.5px;margin-bottom:18px">Sign in or create an account — free plan included.</div>
+      <div class="field" style="margin-bottom:12px"><label>Email</label><input id="authEmail" type="email" placeholder="you@example.com"></div>
+      <div class="field" style="margin-bottom:18px"><label>Password</label><input id="authPass" type="password" placeholder="••••••••"></div>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-primary" style="flex:1" onclick="doAuth('in')">Sign in</button>
+        <button class="btn btn-ghost" style="flex:1" onclick="doAuth('up')">Create account</button>
+      </div>
+      <div id="authMsg" style="font-size:12.5px;color:var(--red);margin-top:12px"></div>
+    </div>`;
+  document.body.appendChild(bg);
+}
+async function doAuth(mode){
+  const email = $('authEmail').value.trim(), password = $('authPass').value;
+  const msg = $('authMsg');
+  if(!email || !password){ msg.textContent = 'Email and password required.'; return; }
+  msg.style.color = 'var(--muted)'; msg.textContent = 'Working…';
+  const fn = mode==='up' ? sb.auth.signUp({email, password}) : sb.auth.signInWithPassword({email, password});
+  const {error} = await fn;
+  if(error){ msg.style.color = 'var(--red)'; msg.textContent = error.message; return; }
+  document.querySelector('.modal-bg')?.remove();
+  await loadAccount(); render();
+  toast(mode==='up' ? '🎉 Account created — you\'re on the Free plan.' : '👋 Welcome back!');
+}
+authClick = function(){
+  if(!window.LIVE){ toast('Demo mode — backend unreachable.'); return; }
+  if(window.SESSION){ sb.auth.signOut().then(()=>{ window.SESSION=null; render(); toast('Signed out.'); }); }
+  else showAuth();
+};
+function requireAuth(){
+  if(!window.SESSION){ showAuth(); return false; }
+  return true;
+}
+
+/* ---------- live action overrides ---------- */
+async function acquireLive(id, mode){
+  if(!requireAuth()) return;
+  toast('Processing…');
+  const {data, error} = await sb.functions.invoke('acquire', {body:{product_id:id, mode}});
+  if(error || data?.error){ toast('⚠️ ' + (data?.error || error.message)); return; }
+  // deliver the watermarked artifact as a real download (any format)
+  if(data.artifact){
+    let blob;
+    if(data.artifact.base64){
+      const bin = atob(data.artifact.base64);
+      const arr = new Uint8Array(bin.length);
+      for(let i=0;i<bin.length;i++) arr[i] = bin.charCodeAt(i);
+      blob = new Blob([arr], {type:data.artifact.mime||'application/octet-stream'});
+    } else {
+      blob = new Blob([data.artifact.content||''], {type:'text/markdown'});
+    }
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = data.artifact.filename; a.click();
+    URL.revokeObjectURL(a.href);
+  }
+  await loadAccount(); render();
+  const meth = data.artifact?.watermark_method ? ` · ${data.artifact.format} watermarked (${data.artifact.watermark_method})` : '';
+  toast(`✅ Licensed — key ${data.license_key.slice(0,16)}…${meth}`);
+}
+async function billingAction(action, plan, annual){
+  if(!requireAuth()) return;
+  toast('Processing…');
+  const {data, error} = await sb.functions.invoke('stripe-checkout', {body:{action, plan, annual}});
+  if(error || data?.error){ toast('⚠️ ' + (data?.error || error.message)); return; }
+  if(data.url){ window.location.href = data.url; return; }   // real Stripe checkout
+  await loadAccount(); render();
+  toast(data.message || '✅ Done' + (data.demo ? ' (demo billing — Stripe keys pending)' : ''));
+}
+const _demo = {downloadSkill, buyWithCredits, rentAvatar, buyoutAvatar, choosePlan, cancelSub, reactivate, topUp, toggleUpvote};
+downloadSkill  = id => window.LIVE ? acquireLive(id,'download')  : _demo.downloadSkill(id);
+buyWithCredits = id => window.LIVE ? acquireLive(id,'purchase')  : _demo.buyWithCredits(id);
+rentAvatar     = id => window.LIVE ? acquireLive(id,'rent')      : _demo.rentAvatar(id);
+buyoutAvatar   = id => window.LIVE ? acquireLive(id,'buyout')    : _demo.buyoutAvatar(id);
+choosePlan     = id => window.LIVE ? billingAction('subscribe', id, state.annual) : _demo.choosePlan(id);
+cancelSub      = () => window.LIVE ? billingAction('cancel')     : _demo.cancelSub();
+reactivate     = () => window.LIVE ? billingAction('reactivate') : _demo.reactivate();
+topUp          = () => window.LIVE ? billingAction('topup')      : _demo.topUp();
+toggleUpvote   = async (e,id) => {
+  if(!window.LIVE) return _demo.toggleUpvote(e,id);
+  e.stopPropagation();
+  if(!requireAuth()) return;
+  const s = SKILLS.find(x=>x.id===id);
+  if(state.upvoted.has(id)){
+    state.upvoted.delete(id); s.upvotes--;
+    sb.from('upvotes').delete().eq('user_id',window.SESSION.user.id).eq('product_id',id).then(()=>{});
+  } else {
+    state.upvoted.add(id); s.upvotes++;
+    sb.from('upvotes').insert({user_id:window.SESSION.user.id, product_id:id}).then(()=>{});
+  }
+  render();
+};
+/* ---------- live upload + real security scan ---------- */
+const TYPE_FROM_LABEL = {'Skill':'skill','Prompt Pack':'prompt','Dataset':'dataset','Avatar':'avatar','Fine-tuned Model / LoRA':'model'};
+async function refreshProducts(){
+  const {data} = await sb.from('products').select('*');
+  if(data?.length){ SKILLS.length=0; data.sort((a,b)=>(a.trend_rank||999)-(b.trend_rank||999)).forEach(r=>SKILLS.push(mapRow(r))); }
+}
+const _demoStartScan = startScan, _demoPublish = publishSkill;
+startScan = async function(){
+  if(!window.LIVE) return _demoStartScan();
+  if(!requireAuth()) return;
+  const v = id => ($(id)?.value || '').trim();
+  const name = v('upName');
+  if(!name){ toast('Give your skill a name first.'); return; }
+  state.pendingName = name;
+  state.scanState = {pct:15, log:['Uploading bundle to skillz.ai…','Running automated security scan…']};
+  render();
+  const {data, error} = await sb.functions.invoke('submit-product', {body:{
+    name, version: v('upVer') || '1.0.0', description: v('upDesc'),
+    category: $('upCat')?.value || 'Productivity',
+    tier: ($('upTier')?.value || 'Pro').toLowerCase(),
+    type: TYPE_FROM_LABEL[$('upType')?.value] || 'skill',
+    llms: [...state.uploadLLMs], docs_markdown: v('upDocs'),
+  }});
+  if(error || data?.error){ state.scanState=null; render(); toast('⚠️ ' + (data?.error || error.message)); return; }
+  const sev = {critical:'✕',high:'✕',medium:'⚠',low:'•'};
+  const findingLines = (data.scan.findings||[]).map(f=>`${sev[f.severity]||'•'} [${f.severity.toUpperCase()}] ${f.title} (${f.cwe}) — ${f.detail}`);
+  state.scanState = {
+    pct:100, done:true, live:true,
+    productId: data.product_id, score: data.scan.score, published: data.published, verdict: data.verdict,
+    log: [
+      `Deep static scan (engine v2.0) complete — verdict: ${(data.verdict||'').toUpperCase()}`,
+      ...data.scan.checks.map(c=>`${c.status==='pass'?'✓':c.status==='warn'?'⚠':'✕'} ${c.name} — ${c.note}`),
+      ...(findingLines.length?['', '— Detailed findings —', ...findingLines]:[]),
+      '', data.message,
+    ],
+  };
+  render();
+};
+publishSkill = async function(){
+  const sc = state.scanState;
+  if(!window.LIVE || !sc?.live) return _demoPublish();
+  await refreshProducts();
+  const id = sc.productId;
+  state.scanState = null; state.pendingName = null;
+  toast('🎉 Live on the marketplace!');
+  go('skill', id);
+};
+/* ---------- designer payout onboarding (Stripe Connect) ---------- */
+async function setupPayouts(){
+  if(!requireAuth()) return;
+  toast('Setting up payouts…');
+  const {data, error} = await sb.functions.invoke('stripe-connect', {body:{action:'onboard'}});
+  if(error || data?.error){ toast('⚠️ ' + (data?.error || error.message)); return; }
+  if(data.url){ window.location.href = data.url; return; }
+  await loadAccount(); render();
+  toast(data.message || '✅ Payout account active.');
+}
+
+/* ---------- admin security console ---------- */
+let ADMIN_KEY = '';
+function renderAdmin(){
+  return `
+  <div class="page" style="max-width:880px">
+    <h1 style="font-size:26px;font-weight:800;letter-spacing:-.02em">Security & rights console</h1>
+    <p style="color:var(--muted);margin:6px 0 22px">Admin-only. Trace leaks, review crawler hits, run payouts. Requires your <code>ADMIN_API_KEY</code>.</p>
+    <div class="panel" style="margin-bottom:16px">
+      <div class="field"><label>Admin API key</label>
+        <input id="admKey" type="password" placeholder="paste ADMIN_API_KEY" value="${ADMIN_KEY}" oninput="ADMIN_KEY=this.value">
+        <span class="hint">Set this as a secret in Supabase, then paste it here to unlock the console.</span></div>
+    </div>
+    <div class="panel" style="margin-bottom:16px">
+      <div style="font-weight:700;margin-bottom:10px">🔎 Trace a leak</div>
+      <div style="color:var(--muted);font-size:13px;margin-bottom:10px">Paste leaked text, or a base64 of a leaked file (dataset/audio/video/model). The decoder identifies the source account.</div>
+      <textarea id="leakText" placeholder="Paste suspected leaked content here…" style="width:100%;min-height:90px;padding:10px;border-radius:10px;border:1px solid var(--border);background:var(--bg2)"></textarea>
+      <button class="btn btn-primary btn-sm" style="margin-top:10px" onclick="traceLeak()">Decode fingerprint</button>
+      <div id="leakResult" style="margin-top:14px;font-size:13px"></div>
+    </div>
+    <div class="panel" style="margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div style="font-weight:700">🛡 Takedown queue</div>
+        <button class="btn btn-ghost btn-sm" onclick="loadTakedowns()">Refresh</button>
+      </div>
+      <div id="takedownList" style="font-size:13px;color:var(--muted)">Loading…</div>
+    </div>
+    <div class="panel">
+      <div style="font-weight:700;margin-bottom:10px">⚙️ Operations</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn btn-ghost btn-sm" onclick="runOp('payout-run')">Run payouts now</button>
+        <button class="btn btn-ghost btn-sm" onclick="runOp('process-scan-queue')">Drain scan queue</button>
+        <button class="btn btn-ghost btn-sm" onclick="runOp('scan-web')">Run leak crawler</button>
+      </div>
+      <div id="opResult" style="margin-top:12px;font-size:12.5px;color:var(--muted);font-family:ui-monospace,monospace"></div>
+    </div>
+  </div>`;
+}
+const FN_BASE = SUPA_URL + '/functions/v1/';
+async function adminCall(fn, body){
+  if(!ADMIN_KEY){ toast('Enter your ADMIN_API_KEY first.'); return {error:'no key'}; }
+  try{
+    const r = await fetch(FN_BASE+fn, {method:'POST', headers:{'Content-Type':'application/json','x-admin-key':ADMIN_KEY}, body:JSON.stringify(body||{})});
+    return await r.json();
+  }catch(e){ return {error:String(e)}; }
+}
+async function traceLeak(){
+  const text = $('leakText').value;
+  const res = $('leakResult');
+  res.innerHTML = 'Decoding…';
+  const data = await adminCall('decode-fingerprint', {text});
+  if(data.error){ res.innerHTML = `<span style="color:var(--red)">${data.error==='Unauthorized'?'Set ADMIN_API_KEY as a Supabase secret and paste it above to enable.':data.error}</span>`; return; }
+  if(!data.found){ res.innerHTML = `<span class="mut">No skillz.ai fingerprint detected in that content.</span>`; return; }
+  res.innerHTML = `<div class="banner banner-danger" style="margin:0;display:block">
+    <b>⚠ Leak traced — ${data.detected_format}</b><br>
+    ${data.matches.map(m=>m.account?`Account: <b>${m.account.display_name}</b> (${m.account.handle}) · IP ${m.ip_address||'—'} · issued ${(m.issued_at||'').slice(0,10)} · license ${m.license?.license_key?.slice(0,18)||'—'}… · product ${m.product_id}`:`Marker ${m.marker} (unregistered)`).join('<br>')}
+  </div>`;
+}
+async function loadTakedowns(){
+  const el = $('takedownList'); el.textContent = 'Loading…';
+  // takedowns are service-role only; read via admin function-less path not available, so use a tiny RPC-less query through decode is N/A.
+  el.innerHTML = '<span class="mut">Takedown rows are service-role protected. The daily crawler writes here; view them in your Supabase dashboard or wire a read endpoint. Trace + crawler actions below are live.</span>';
+}
+async function runOp(fn){
+  const el = $('opResult'); el.textContent = 'Running '+fn+'…';
+  const data = await adminCall(fn, {});
+  el.textContent = data.error ? (data.error==='Unauthorized'?'Set ADMIN_API_KEY to enable.':data.error) : JSON.stringify(data, null, 1).slice(0,600);
+}
+
+initLive();
+</script>
+</body>
+</html>
