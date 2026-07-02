@@ -43,7 +43,7 @@ supabase/
 - Model → safetensors metadata fingerprint · Assets → SVG metadata + zero-width
 
 ## Deploy
-1. **Backend** is already live (Supabase project `cvpkdnuqtpqxstglfjhb`). To reproduce elsewhere:
+1. **Backend** is already live (Supabase project `mkofedsnuzyflblwhdrs`, us-west-2). To reproduce elsewhere:
    `supabase db push` then `supabase functions deploy` for each function in `supabase/functions/`.
 2. **Frontend:** deploy `index.html` to Vercel/Netlify (static, no build).
 3. **Secrets** (Supabase → Edge Functions → Secrets): `CRON_SECRET`, `ADMIN_API_KEY`,
