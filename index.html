@@ -81,6 +81,19 @@
     padding:4px 10px;border-radius:99px;
     background:var(--accent-dim);color:var(--accent);
   }
+  /* Keyboard focus visibility for interactive elements */
+  [role="button"]:focus-visible,[role="switch"]:focus-visible,[role="checkbox"]:focus-visible,
+  .nav-link:focus-visible,tr[tabindex]:focus-visible{
+    outline:2px solid var(--accent);outline-offset:2px;
+  }
+  /* Mobile nav — collapse header into two rows with scrollable links below ~640px */
+  @media (max-width:640px){
+    nav{flex-wrap:wrap;height:auto;padding:10px 16px;gap:10px;row-gap:8px}
+    .nav-links{order:3;flex:1 1 100%;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:2px}
+    .nav-links::-webkit-scrollbar{display:none}
+    .nav-link{white-space:nowrap;padding:7px 10px;font-size:13px}
+    .nav-right{margin-left:auto;gap:8px}
+  }
 
   /* ---------- Layout ---------- */
   .page{max-width:1180px;margin:0 auto;padding:40px 28px 90px}
@@ -320,16 +333,16 @@
 </head>
 <body>
 <nav>
-  <div class="logo" onclick="go('home')">
+  <div class="logo" role="button" tabindex="0" aria-label="skillz.ai home" onclick="go('home')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">
     <div class="logo-mark">S</div> skillz<span style="color:var(--accent)">.ai</span>
   </div>
   <div class="nav-links" id="navLinks"></div>
   <div class="nav-right">
-    <span class="plan-chip" id="creditChip" style="cursor:pointer" title="Marketplace credits — refills monthly" onclick="go('billing')"></span>
+    <span class="plan-chip" id="creditChip" style="cursor:pointer" role="button" tabindex="0" aria-label="Marketplace credits — open billing" title="Marketplace credits — refills monthly" onclick="go('billing')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}"></span>
     <span class="plan-chip" id="planChip"></span>
     <button class="btn btn-ghost btn-sm" id="authBtn" onclick="authClick()">Demo</button>
     <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" title="Toggle theme"></button>
-    <div class="avatar" onclick="go('billing')">LC</div>
+    <div class="avatar" role="button" tabindex="0" aria-label="Account — open billing" onclick="go('billing')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">LC</div>
   </div>
 </nav>
 <main id="app"></main>
@@ -842,7 +855,10 @@ function toggleUpvote(e, id){
   else { state.upvoted.add(id); SKILLS.find(s=>s.id===id).upvotes++; }
   render();
 }
+const AUTH_ROUTES = ['billing','dashboard','upload','admin'];
 function go(route, arg){
+  // In live mode, account pages require a session — prompt sign-in instead (demo mode stays open).
+  if(window.LIVE && !window.SESSION && AUTH_ROUTES.includes(route)){ authClick(); return; }
   state.route = route; state.routeArg = arg || null;
   state.detailTab = 'overview';
   window.scrollTo({top:0});
@@ -854,7 +870,7 @@ function skillCard(s){
   const d = designerOf(s);
   const voted = state.upvoted.has(s.id);
   return `
-  <div class="skill-card" onclick="go('skill','${s.id}')">
+  <div class="skill-card" role="button" tabindex="0" aria-label="${esc(s.name)}" onclick="go('skill','${s.id}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">
     <div class="skill-card-top">
       <div class="skill-icon">${s.icon}</div>
       <button class="upvote ${voted?'voted':''}" onclick="toggleUpvote(event,'${s.id}')">▲ ${fmt(s.upvotes)}</button>
@@ -884,7 +900,7 @@ function renderHome(){
     <p>Skills, datasets, avatars, prompt packs &amp; fine-tuned models for ChatGPT, Claude, and beyond. Everything scanned &amp; verified. Every designer paid.</p>
     <div class="hero-search">
       <span style="color:var(--faint)">⌕</span>
-      <input id="heroSearch" placeholder="Search skills — try 'data analysis' or 'debugging'..."
+      <input id="heroSearch" aria-label="Search skills" placeholder="Search skills — try 'data analysis' or 'debugging'..."
         onkeydown="if(event.key==='Enter'){state.search=this.value;go('browse')}">
       <button class="btn btn-primary" onclick="state.search=$('heroSearch').value;go('browse')">Search</button>
     </div>
@@ -900,21 +916,21 @@ function renderHome(){
     <div class="section-head">
       <div><div class="section-title">✦ Hand-picked by our team</div>
       <div class="section-sub">Featured skills our curators love this month</div></div>
-      <a class="see-all" onclick="go('browse')">Browse all →</a>
+      <a class="see-all" tabindex="0" role="button" onclick="go('browse')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">Browse all →</a>
     </div>
     <div class="grid grid-4">${featured.map(skillCard).join('')}</div>
 
     <div class="section-head">
       <div><div class="section-title">🔥 Trending now</div>
       <div class="section-sub">Most downloaded this week</div></div>
-      <a class="see-all" onclick="state.sort='downloads';go('browse')">See all →</a>
+      <a class="see-all" tabindex="0" role="button" onclick="state.sort='downloads';go('browse')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">See all →</a>
     </div>
     <div class="grid grid-4">${trending.map(skillCard).join('')}</div>
 
     <div class="section-head">
       <div><div class="section-title">🧬 New product lines</div>
       <div class="section-sub">Datasets for training, avatars to rent or own, models &amp; prompt packs</div></div>
-      <a class="see-all" onclick="state.typeF='dataset';go('browse')">Explore →</a>
+      <a class="see-all" tabindex="0" role="button" onclick="state.typeF='dataset';go('browse')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">Explore →</a>
     </div>
     <div class="grid grid-4">${['ds1','av1','md1','pp1'].map(id=>skillCard(SKILLS.find(s=>s.id===id))).join('')}</div>
 
@@ -924,7 +940,7 @@ function renderHome(){
     </div>
     <div class="grid grid-4">
       ${topDesigners.map(([id,d])=>`
-      <div class="skill-card" onclick="go('browse')">
+      <div class="skill-card" role="button" tabindex="0" aria-label="Browse all products" onclick="go('browse')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">
         <div style="display:flex;align-items:center;gap:12px">
           <div class="avatar" style="background:${d.color};width:42px;height:42px;font-size:15px">${d.avatar}</div>
           <div><div class="skill-name">${d.name}</div><div class="skill-by">${d.handle}</div></div>
@@ -956,7 +972,8 @@ function filteredSkills(){
     if(state.llmF !== 'All' && !s.llms.includes(state.llmF)) return false;
     if(state.search){
       const q = state.search.toLowerCase();
-      if(!(s.name+s.desc+s.category+DESIGNERS[s.designer].name).toLowerCase().includes(q)) return false;
+      const designerName = designerOf(s).name || '';
+      if(!((s.name+' '+s.desc+' '+s.category+' '+designerName).toLowerCase().includes(q))) return false;
     }
     return true;
   });
@@ -981,7 +998,7 @@ function renderBrowse(){
         .map(([v,l])=>`<button class="chip ${state.typeF===v?'on':''}" onclick="state.typeF='${v}';render()">${l}</button>`).join('')}
     </div>
     <div class="filter-bar">
-      <input type="search" placeholder="Search skills, designers, categories..." value="${esc(state.search)}"
+      <input type="search" aria-label="Search skills, designers, and categories" placeholder="Search skills, designers, categories..." value="${esc(state.search)}"
         oninput="state.search=this.value;renderPartial()">
       <select onchange="state.tierF=this.value;renderPartial()">
         <option ${state.tierF==='All'?'selected':''} value="All">All tiers</option>
@@ -1176,7 +1193,7 @@ function renderSkill(){
 
   return `
   <div class="page">
-    <a class="crumb" onclick="go('browse')">← Back to browse</a>
+    <a class="crumb" tabindex="0" role="button" onclick="go('browse')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">← Back to browse</a>
     <div class="detail-grid">
       <div>
         <div style="display:flex;gap:18px;align-items:flex-start">
@@ -1209,7 +1226,7 @@ function renderSkill(){
             <div class="meta-row"><span class="k">Category</span><span class="v">${s.category}</span></div>
             <div class="meta-row"><span class="k">Version</span><span class="v">${s.version}</span></div>
             <div class="meta-row"><span class="k">Updated</span><span class="v">${s.updated}</span></div>
-            ${s.meta?'':`<div class="meta-row"><span class="k">Size</span><span class="v">${s.sizeKb} KB</span></div>`}
+            ${(!s.meta && s.sizeKb) ? `<div class="meta-row"><span class="k">Size</span><span class="v">${s.sizeKb} KB</span></div>` : ''}
             <div class="meta-row"><span class="k">Last scan</span><span class="v">${s.security.scanned}</span></div>
             <div class="meta-row"><span class="k">License</span><span class="v">${RENTAL_TYPES.includes(s.type)?'Rental or buyout':'Subscription-bound'}</span></div>
           </div>
@@ -1245,7 +1262,7 @@ function renderPricing(){
       <p style="color:var(--muted);margin-top:8px">Every plan includes security-scanned skills and designer revenue sharing.</p>
       <div class="pricing-toggle">
         <span style="color:${state.annual?'var(--muted)':'var(--text)'}">Monthly</span>
-        <div class="switch ${state.annual?'on':''}" onclick="state.annual=!state.annual;render()"><div class="knob"></div></div>
+        <div class="switch ${state.annual?'on':''}" role="switch" tabindex="0" aria-checked="${state.annual}" aria-label="Annual billing" onclick="state.annual=!state.annual;render()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}"><div class="knob"></div></div>
         <span style="color:${state.annual?'var(--text)':'var(--muted)'}">Annual</span>
         <span class="save-tag">Save 20%</span>
       </div>
@@ -1352,7 +1369,7 @@ function renderBilling(){
       <table>
         <tr><th>Item</th><th>Type</th><th>License key</th><th>Status</th></tr>
         ${owned.map(s=>`
-        <tr style="cursor:pointer" onclick="go('skill','${s.id}')">
+        <tr style="cursor:pointer" tabindex="0" onclick="go('skill','${s.id}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">
           <td><b>${s.icon} ${s.name}</b></td>
           <td><span class="badge badge-tier">${TYPE_META[s.type].label}</span></td>
           <td class="mut" style="font-family:monospace;font-size:12px">sk-live-${s.id}••••${s.id.slice(1)}f2</td>
@@ -1378,6 +1395,9 @@ function renderBilling(){
 function renderDashboard(){
   const me = DESIGNERS.d1; // demo: you are Maya
   const mySkills = SKILLS.filter(s=>s.designer==='d1');
+  const totalDl = mySkills.reduce((a,s)=>a+s.downloads,0);
+  const weekDl = Math.round(totalDl*0.028); // derived from the same data set as the total
+  const avgScore = mySkills.length ? Math.round(mySkills.reduce((a,s)=>a+s.score,0)/mySkills.length) : null;
   const monthly = [
     {m:'Jan', amt:1240},{m:'Feb', amt:1610},{m:'Mar', amt:2080},
     {m:'Apr', amt:2890},{m:'May', amt:3420},{m:'Jun', amt:1830},
@@ -1402,8 +1422,8 @@ function renderDashboard(){
     <div class="stat-grid">
       <div class="stat-card"><div class="l">Lifetime earnings</div><div class="n">${money(me.earnings)}</div><div class="s pos">↑ 18% vs last quarter</div></div>
       <div class="stat-card"><div class="l">June earnings</div><div class="n">$1,830</div><div class="s mut">payout July 1</div></div>
-      <div class="stat-card"><div class="l">Total downloads</div><div class="n">${fmt(mySkills.reduce((a,s)=>a+s.downloads,0))}</div><div class="s pos">↑ 2.4k this week</div></div>
-      <div class="stat-card"><div class="l">Avg security score</div><div class="n">${Math.round(mySkills.reduce((a,s)=>a+s.score,0)/mySkills.length)}</div><div class="s" style="color:var(--green)">Verified Safe</div></div>
+      <div class="stat-card"><div class="l">Total downloads</div><div class="n">${fmt(totalDl)}</div><div class="s ${weekDl?'pos':'mut'}">${weekDl?`↑ ${fmt(weekDl)} this week`:'no downloads yet'}</div></div>
+      <div class="stat-card"><div class="l">Avg security score</div><div class="n">${avgScore ?? '—'}</div><div class="s" style="color:var(--green)">${avgScore!==null?'Verified Safe':'No skills yet'}</div></div>
     </div>
     <div class="panel" style="margin-bottom:18px">
       <div style="font-weight:700;margin-bottom:18px">Earnings — last 6 months</div>
@@ -1420,8 +1440,9 @@ function renderDashboard(){
       <div style="font-weight:700;margin-bottom:10px">Your skills — performance</div>
       <table>
         <tr><th>Skill</th><th>Downloads</th><th>Upvotes</th><th>Rating</th><th>Security</th><th>June rev.</th></tr>
+        ${mySkills.length ? '' : '<tr><td colspan="6" class="mut" style="padding:18px;text-align:center">No skills published yet — upload your first skill to see performance here.</td></tr>'}
         ${mySkills.map(s=>`
-        <tr style="cursor:pointer" onclick="go('skill','${s.id}')">
+        <tr style="cursor:pointer" tabindex="0" onclick="go('skill','${s.id}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">
           <td><b>${s.icon} ${s.name}</b> <span class="mut">v${s.version}</span></td>
           <td>${s.downloads.toLocaleString()}</td>
           <td>${fmt(s.upvotes)}</td>
@@ -1522,7 +1543,7 @@ function renderUpload(){
           <span class="hint">Determines which subscribers can license it</span></div>
         <div class="field full"><label>LLM compatibility</label>
           <div style="display:flex;gap:9px;flex-wrap:wrap">
-            ${LLMS.map(l=>`<div class="check-pill ${state.uploadLLMs.has(l)?'on':''}" onclick="toggleUploadLLM('${l}')">${state.uploadLLMs.has(l)?'✓ ':''}${l}${(l==='ChatGPT'||l==='Claude')?' ⭐':''}</div>`).join('')}
+            ${LLMS.map(l=>`<div class="check-pill ${state.uploadLLMs.has(l)?'on':''}" role="checkbox" tabindex="0" aria-checked="${state.uploadLLMs.has(l)}" aria-label="${l}" onclick="toggleUploadLLM('${l}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">${state.uploadLLMs.has(l)?'✓ ':''}${l}${(l==='ChatGPT'||l==='Claude')?' ⭐':''}</div>`).join('')}
           </div>
           <span class="hint">⭐ Priority providers — we test these first</span></div>
         <div class="field full"><label>Skill bundle</label>
@@ -1553,10 +1574,20 @@ const NAV = [
   ['dashboard','Designer Studio'],['billing','Billing'],
 ];
 function render(){
+  const signedOut = window.LIVE && !window.SESSION;
+  if(signedOut && AUTH_ROUTES.includes(state.route)) state.route = 'home';
   $('app').innerHTML = (ROUTES[state.route] || renderHome)();
   const nav = NAV.concat(window.SESSION ? [['admin','Admin']] : []);
   $('navLinks').innerHTML = nav.map(([r,label])=>
-    `<a class="nav-link ${state.route===r||(r==='browse'&&state.route==='skill')?'active':''}" onclick="go('${r}')">${label}</a>`).join('');
+    `<a class="nav-link ${state.route===r||(r==='browse'&&state.route==='skill')?'active':''}" tabindex="0" onclick="go('${r}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">${label}</a>`).join('');
+  // Signed-out visitors (live mode) should not see account chrome — one source of truth: SESSION.
+  $('creditChip').style.display = signedOut ? 'none' : '';
+  $('planChip').style.display = signedOut ? 'none' : '';
+  const avEl = document.querySelector('nav .avatar');
+  if(avEl){
+    avEl.style.display = signedOut ? 'none' : '';
+    if(window.SESSION) avEl.textContent = (window.SESSION.user.email||'U').slice(0,2).toUpperCase();
+  }
   $('creditChip').textContent = '⬡ ' + state.credits;
   const ab = $('authBtn');
   if(ab) ab.textContent = window.LIVE ? (window.SESSION ? 'Sign out' : 'Sign in') : 'Demo';
@@ -1578,16 +1609,22 @@ const TIER_NAME = {free:'Free', starter:'Starter', pro:'Pro', enterprise:'Enterp
 let sb = null;
 window.LIVE = false; window.SESSION = null;
 
+// Map designer display names -> DESIGNERS keys (d1–d4) so live rows resolve correctly,
+// and remember seed sizes (the products view has no size column).
+const DESIGNER_BY_NAME = Object.fromEntries(Object.entries(DESIGNERS).map(([id,d])=>[d.name,id]));
+const SEED_SIZE = Object.fromEntries(SKILLS.map(s=>[s.id, s.sizeKb]));
+
 function mapRow(r){
   return {
     id:r.id, type:r.type, icon:r.icon, name:r.name, desc:r.description,
     category:r.category, tier:TIER_NAME[r.tier]||'Free', version:r.version,
-    designer:null, designerLabel:r.designer_label,
+    designer:DESIGNER_BY_NAME[(r.designer_label||'').split('@')[0].trim()] || null,
+    designerLabel:r.designer_label,
     llms:r.llms||[], format:r.format||undefined,
     credits:r.credits_price??undefined, rent:r.rent_price??undefined, buyout:r.buyout_price??undefined,
     score:r.score, upvotes:r.upvotes, downloads:r.downloads, rating:Number(r.rating),
     featured:r.featured, trendRank:r.trend_rank||999,
-    updated:(r.updated_at||'').slice(0,10), sizeKb:0,
+    updated:(r.updated_at||'').slice(0,10), sizeKb:SEED_SIZE[r.id] ?? 0,
     meta:r.meta||undefined, docs:r.docs||{}, security:r.security||{scanned:'',checks:[]},
   };
 }
