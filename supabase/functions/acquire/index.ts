@@ -3,7 +3,7 @@
 // Credit-priced items charge credits; seller-priced items ($) return a Stripe Checkout URL,
 // and the license is granted by the stripe-webhook on payment. Platform keeps 33%.
 import { createClient } from "jsr:@supabase/supabase-js@2";
-import { buildArtifact } from "./watermark.ts";
+import { buildArtifact, watermarkRealFile } from "./watermark.ts";
 
 const PLAN_TYPES: Record<string, string[]> = {
   basic:     ["skill", "prompt", "model"],
@@ -35,6 +35,11 @@ Deno.serve(async (req: Request) => {
     const { data: profile } = await admin.from("profiles").select("*").eq("id", user.id).single();
     if (!profile) return json({ error: "Profile missing" }, 500);
     if (!profile.sub_active) return json({ error: "Subscription lapsed — reactivate to acquire items" }, 403);
+
+    // ---- rate limit: max 20 downloads per hour ----
+    const hourAgo = new Date(Date.now() - 3600e3).toISOString();
+    const { count: recentDl } = await admin.from("download_events").select("id", { count: "exact", head: true }).eq("user_id", user.id).gte("created_at", hourAgo);
+    if ((recentDl ?? 0) >= 20) return json({ error: "Rate limit: max 20 downloads per hour. Try again later." }, 429);
 
     // ---- plan-type access gate ----
     const allowed = PLAN_TYPES[profile.plan] ?? [];
@@ -95,7 +100,17 @@ Deno.serve(async (req: Request) => {
     const fpCode = `SKZFP1.${rand(6)}.${(await sha256Hex(new TextEncoder().encode(user.id + product_id + Date.now()))).slice(0, 16)}`;
     const docs = product.docs ?? {};
     const docText = [`# ${product.name} v${product.version ?? "1.0"}`, ``, `> Licensed via skillz.ai — License ${license!.license_key}`, `> Individually fingerprinted. Redistribution violates the skillz.ai Terms of Service.`, ``, `## Overview`, docs.overview ?? product.description ?? "", ``, `## Usage`, docs.usage ?? "", ``, `## Install`, "```", docs.install ?? "", "```", ``, `<!-- ${rand(4)} -->`].join("\n");
-    const art = buildArtifact(product, fpCode, docText); const artifactSha = await sha256Hex(art.bytes);
+    // deliver the seller's real uploaded file when one exists; fall back to the generated docs bundle
+    let art = null as any;
+    if (product.bundle_path && !product.bundle_path.endsWith("/SKILL.md")) {
+      const { data: blob, error: dlErr } = await admin.storage.from("bundles").download(product.bundle_path);
+      if (!dlErr && blob) {
+        const bytes = new Uint8Array(await blob.arrayBuffer());
+        art = watermarkRealFile(bytes, product.bundle_path.split(".").pop()!.toLowerCase(), product.id, fpCode);
+      }
+    }
+    if (!art) art = buildArtifact(product, fpCode, docText);
+    const artifactSha = await sha256Hex(art.bytes);
     const { data: fp } = await admin.from("fingerprints").insert({ fingerprint_code: fpCode, user_id: user.id, product_id, license_id: license!.id, artifact_sha256: artifactSha, ip_address: req.headers.get("x-forwarded-for")?.split(",")[0] ?? null, user_agent: req.headers.get("user-agent") ?? null, method: art.method, artifact_format: art.format }).select().single();
     if (art.canary && fp) await admin.from("canaries").insert({ fingerprint_code: fpCode, product_id, user_id: user.id, canary_signature: art.canary.signature, row_positions: art.canary.positions });
     await admin.from("download_events").insert({ user_id: user.id, product_id, fingerprint_id: fp?.id ?? null });

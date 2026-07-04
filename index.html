@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>skillz.ai — The Marketplace for LLM Powerups</title>
+<meta name="description" content="Skills, prompt packs, datasets, avatars, voices and fine-tuned models for ChatGPT, Claude & more. Security-scanned, forensically watermarked, sellers keep 67%.">
+<meta property="og:title" content="skillz.ai — The Marketplace for LLM Powerups">
+<meta property="og:description" content="Security-scanned skills, prompts, datasets, avatars, voices & models for your LLM. Plans from $15/mo.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#8b6cff">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%238b6cff'/%3E%3Ctext x='32' y='44' font-size='36' font-weight='800' font-family='sans-serif' fill='white' text-anchor='middle'%3ES%3C/text%3E%3C/svg%3E">
 <style>
   :root[data-theme="dark"]{
     --bg:#0a0a0d; --bg2:#0e0e12; --surface:#131318; --surface2:#1a1a21;
@@ -346,7 +352,16 @@
   </div>
 </nav>
 <main id="app"></main>
-<footer>skillz.ai — The marketplace for LLM powerups · Skills prioritized for ChatGPT &amp; Claude · © 2026</footer>
+<footer>
+  skillz.ai — The marketplace for LLM powerups · Skills prioritized for ChatGPT &amp; Claude · © 2026<br>
+  <span style="display:inline-flex;gap:16px;margin-top:10px;flex-wrap:wrap;justify-content:center">
+    <a class="see-all" tabindex="0" role="button" onclick="go('docs')" onkeydown="if(event.key==='Enter'){this.click()}">Buyer guide</a>
+    <a class="see-all" tabindex="0" role="button" onclick="go('sellerdocs')" onkeydown="if(event.key==='Enter'){this.click()}">Seller guide</a>
+    <a class="see-all" href="legal/terms-of-service.md" target="_blank">Terms</a>
+    <a class="see-all" href="legal/dmca-policy.md" target="_blank">DMCA</a>
+    <a class="see-all" href="legal/refund-policy.md" target="_blank">Refunds</a>
+  </span>
+</footer>
 <div class="toast" id="toast"></div>
 <script>
 /* ================= MOCK DATA ================= */
@@ -822,6 +837,9 @@ let state = {
   detailTab: 'overview',
   scanState: null, // null | {pct, log[]}
   uploadLLMs: new Set(['ChatGPT','Claude']),
+  studio: null,      // live seller dashboard payload (studio-stats)
+  docCache: {},      // fetched guide HTML fragments
+  reviews: {},       // product_id -> review rows
 };
 try { const t = localStorage.getItem('skillz-theme'); if(t) state.theme = t; } catch(e){}
 document.documentElement.dataset.theme = state.theme;
@@ -887,6 +905,8 @@ function go(route, arg){
   if(window.LIVE && !window.SESSION && AUTH_ROUTES.includes(route)){ authClick(); return; }
   state.route = route; state.routeArg = arg || null;
   state.detailTab = 'overview';
+  if(route === 'dashboard' && typeof loadStudio === 'function') loadStudio();
+  if(route === 'skill' && typeof loadReviews === 'function') loadReviews(arg);
   window.scrollTo({top:0});
   render();
 }
@@ -903,7 +923,7 @@ function skillCard(s){
     </div>
     <div>
       <div class="skill-name">${s.name}</div>
-      <div class="skill-by">${TYPE_META[s.type].label} by ${d.name}</div>
+      <div class="skill-by">${TYPE_META[s.type].label} by ${d.name}${s.sample ? ' <span class="badge badge-llm" style="font-size:10px;opacity:.75" title="Curated example listing">Editor’s example</span>' : ''}</div>
     </div>
     <div class="skill-desc">${s.desc}</div>
     <div class="llm-row">${s.format?`<span class="badge badge-llm">${s.format}</span>`:llmBadges(s.llms,3)}${priceBadge(s)}</div>
@@ -1261,9 +1281,26 @@ function renderSkill(){
           </div>
         </div>
         <div class="banner banner-info" style="margin:0;font-size:12.5px">${RENTAL_TYPES.includes(s.type)
-          ?'ℹ️ Rentals deactivate if your subscription lapses. Buyouts are perpetual, exclusive, and survive cancellation.'
-          :'ℹ️ Licensed items validate against your subscription. If it lapses, they deactivate until you renew.'}</div>
+          ?'ℹ️ Personal-use packs deactivate if your subscription lapses. Commercial licenses are perpetual and survive cancellation.'
+          :'ℹ️ Credit-licensed items validate against your subscription. Dollar purchases are perpetual.'}</div>
       </div>
+    </div>
+    <div class="panel" style="margin-top:26px">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px">
+        <div style="font-weight:700">Buyer reviews ${state.reviews[s.id]?.length ? `<span class="mut" style="font-weight:500">· ${state.reviews[s.id].length}</span>` : ''}</div>
+        ${window.LIVE && window.SESSION && (owned || isOwnedForever) ? '' : `<span class="hint">${window.LIVE ? 'Buy this product to leave a review' : 'Reviews are live-site only'}</span>`}
+      </div>
+      ${(state.reviews[s.id] || []).map(r => `
+        <div style="border-top:1px solid var(--border);padding:12px 0">
+          <div style="font-size:13px"><span style="color:var(--accent)">${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}</span> <span class="mut" style="font-size:12px">· ${(r.created_at || '').slice(0, 10)}</span></div>
+          ${r.body ? `<div style="font-size:13.5px;color:var(--muted);margin-top:6px">${esc(r.body)}</div>` : ''}
+        </div>`).join('') || `<div class="mut" style="font-size:13.5px;padding:8px 0">No reviews yet${window.LIVE ? ' — licensed buyers can be the first' : ''}.</div>`}
+      ${window.LIVE && window.SESSION && (owned || isOwnedForever) ? `
+      <div style="border-top:1px solid var(--border);padding-top:14px;margin-top:6px;display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start">
+        <select id="revRating" aria-label="Rating" style="padding:8px">${[5,4,3,2,1].map(n => `<option value="${n}">${'★'.repeat(n)}</option>`).join('')}</select>
+        <input id="revBody" placeholder="Share what worked (optional)" style="flex:1;min-width:200px">
+        <button class="btn btn-primary btn-sm" onclick="submitReview('${s.id}')">Post review</button>
+      </div>` : ''}
     </div>
   </div>`;
 }
@@ -1424,7 +1461,69 @@ function renderBilling(){
 }
 
 /* ================= DESIGNER DASHBOARD ================= */
+const USD_PRICEABLE_TYPES = ['dataset','avatar','voice','model','rag','eval','assets'];
+function renderStudioLive(){
+  const st = state.studio;
+  const money2 = c => '$' + (c/100).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+  return `
+  <div class="page" style="max-width:1020px">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;margin-bottom:26px">
+      <div>
+        <h1 style="font-size:28px;font-weight:800;letter-spacing:-.025em">Designer dashboard</h1>
+        <p style="color:var(--muted);margin-top:5px">Signed in as ${esc(window.SESSION?.user?.email||'you')} · <span class="badge badge-tier">67% revenue share</span></p>
+      </div>
+      <button class="btn btn-primary" onclick="go('upload')">+ Upload new product</button>
+    </div>
+    <div class="panel" style="margin-bottom:18px;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;background:linear-gradient(120deg,var(--accent-dim),transparent)">
+      <div>
+        <div style="font-weight:700">💸 Payouts ${st.connect_status==='active'?'<span class="badge badge-safe">● Connected</span>':'<span class="badge badge-warn">● Not set up</span>'}</div>
+        <div style="color:var(--muted);font-size:13px;margin-top:4px">${st.connect_status==='active'?'Monthly payouts deposit automatically at your 67% share.':'Connect a payout account to receive your 67% share automatically each month.'}</div>
+      </div>
+      ${st.connect_status==='active'?'':'<button class="btn btn-primary" onclick="setupPayouts()">Set up payouts</button>'}
+    </div>
+    <div class="stat-grid">
+      <div class="stat-card"><div class="l">Lifetime earnings (net)</div><div class="n">${money2(st.totals.net_cents)}</div><div class="s mut">of ${money2(st.totals.gross_cents)} gross · 33% platform fee</div></div>
+      <div class="stat-card"><div class="l">Total sales</div><div class="n">${st.totals.sales}</div><div class="s mut">across ${st.products.length} product${st.products.length===1?'':'s'}</div></div>
+      <div class="stat-card"><div class="l">Total downloads</div><div class="n">${fmt(st.totals.downloads)}</div><div class="s mut">all time</div></div>
+      <div class="stat-card"><div class="l">Payouts recorded</div><div class="n">${st.payouts.length}</div><div class="s mut">${st.payouts[0]?`latest: ${st.payouts[0].period} (${st.payouts[0].status})`:'none yet'}</div></div>
+    </div>
+    ${st.suggestions.length?`<div class="panel" style="margin-bottom:18px">
+      <div style="font-weight:700;margin-bottom:10px">💡 Suggestions</div>
+      ${st.suggestions.map(s=>`<div style="font-size:13.5px;color:var(--muted);padding:5px 0">• ${esc(s)}</div>`).join('')}
+    </div>`:''}
+    <div class="panel" style="margin-bottom:18px">
+      <div style="font-weight:700;margin-bottom:10px">Your products</div>
+      ${st.products.length?`<table>
+        <tr><th>Product</th><th>Price</th><th>Sales</th><th>Net earned</th><th>Status</th><th>Actions</th></tr>
+        ${st.products.map(p=>`
+        <tr>
+          <td><b>${esc(p.name)}</b> <span class="mut">${p.type}</span>${p.rating?` · ★ ${p.rating}`:''}</td>
+          <td>${p.credits_price!=null&&p.credits_price>0?`⬡ ${p.credits_price}`:''}${p.credits_price&&p.price_usd_cents?' + ':''}${p.price_usd_cents!=null?(p.price_usd_cents===0?'Free':money2(p.price_usd_cents)):''}</td>
+          <td>${p.sales_count} <span class="mut">(${p.sales_30d} in 30d)</span></td>
+          <td><b>${money2(p.net_cents)}</b></td>
+          <td>${p.published?'<span class="badge badge-safe">Live</span>':'<span class="badge badge-warn">Unpublished</span>'}</td>
+          <td style="white-space:nowrap">
+            ${USD_PRICEABLE_TYPES.includes(p.type)?`<input id="pr_${p.id}" type="number" min="0" step="0.01" value="${p.price_usd_cents!=null?(p.price_usd_cents/100).toFixed(2):''}" placeholder="$" style="width:76px;padding:4px 6px;font-size:12px"> <button class="btn btn-ghost btn-sm" onclick="studioAction('set_price','${p.id}',$('pr_${p.id}').value)">Set $</button>`:''}
+            <button class="btn btn-ghost btn-sm" onclick="studioAction('${p.published?'unpublish':'republish'}','${p.id}')">${p.published?'Unpublish':'Republish'}</button>
+          </td>
+        </tr>`).join('')}
+      </table>`:`<div class="empty">No products yet — upload your first one to start selling.</div>`}
+    </div>
+    <div class="panel">
+      <div style="font-weight:700;margin-bottom:10px">Payout history</div>
+      ${st.payouts.length?`<table>
+        <tr><th>Period</th><th>Gross attributed</th><th>Your share (67%)</th><th>Status</th></tr>
+        ${st.payouts.map(p=>`<tr><td>${p.period}</td><td>${money2(p.gross_cents)}</td><td><b>${money2(p.net_cents)}</b></td><td class="${p.status==='paid'?'pos':''}">● ${p.status}</td></tr>`).join('')}
+      </table>`:`<div class="empty" style="padding:24px">No payouts yet — they run monthly once you have sales.</div>`}
+      <p style="color:var(--faint);font-size:12.5px;margin-top:12px">Revenue = credit spends on your products (⬡ = $0.50) + dollar sales. The platform keeps 33%; you keep 67%.</p>
+    </div>
+  </div>`;
+}
 function renderDashboard(){
+  if(window.LIVE && window.SESSION){
+    if(state.studio) return renderStudioLive();
+    return `<div class="page"><div class="empty">Loading your studio…</div></div>`;
+  }
   const me = DESIGNERS.d1; // demo: you are Maya
   const mySkills = SKILLS.filter(s=>s.designer==='d1');
   const totalDl = mySkills.reduce((a,s)=>a+s.downloads,0);
@@ -1499,6 +1598,30 @@ function renderDashboard(){
 }
 
 /* ================= UPLOAD ================= */
+const UPLOAD_META = { // per-type: accepted files + pricing behavior
+  skill:   {accept:'.md,.zip',            price:'auto',    info:'Skills are auto-priced at ⬡ 5 per license — you keep 67% of every sale.'},
+  prompt:  {accept:'.md,.zip',            price:'auto',    info:'Prompt packs are auto-priced at ⬡ 2 per license — you keep 67%.'},
+  workflow:{accept:'.md,.zip',            price:'auto',    info:'Workflows are auto-priced at ⬡ 30 per license — you keep 67%.'},
+  dataset: {accept:'.csv,.jsonl,.zip',    price:'tiered',  info:'Pick a size tier: small ⬡15 / medium ⬡30 (auto) — large & XL are priced by you in dollars.'},
+  avatar:  {accept:'.mp4,.zip',           price:'commercial', info:'Personal-use pack is ⬡ 60 (auto). Optionally set a commercial-license price in dollars (perpetual).'},
+  voice:   {accept:'.wav,.mp3',           price:'commercial', info:'Personal-use pack is ⬡ 60 (auto). Optionally set a commercial-license price in dollars (perpetual).'},
+  model:   {accept:'.safetensors,.gguf',  price:'usd',     info:'You set the price in dollars — 0 makes it free. Buyers get a perpetual license; you keep 67%.'},
+  rag:     {accept:'.csv,.jsonl,.zip',    price:'usd',     info:'You set the price in dollars — buyers get a perpetual license; you keep 67%.'},
+  eval:    {accept:'.md,.jsonl,.zip',     price:'usd',     info:'You set the price in dollars — buyers get a perpetual license; you keep 67%.'},
+  assets:  {accept:'.zip,.svg',           price:'usd',     info:'You set the price in dollars — buyers get a perpetual license; you keep 67%.'},
+};
+function updateUploadPricing(){
+  const t = TYPE_FROM_LABEL[$('upType')?.value] || 'skill';
+  const m = UPLOAD_META[t];
+  const sizeSel = $('upSizeTier'), price = $('upPrice'), info = $('upPriceInfo'), file = $('upFile'), hint = $('upFileHint');
+  if(file) file.accept = m.accept;
+  if(hint) hint.textContent = `Accepted for ${t}s: ${m.accept.split(',').join(', ')} · max 10 MB. This exact file is what buyers download — individually watermarked per buyer.`;
+  if(info) info.textContent = m.info;
+  if(sizeSel) sizeSel.style.display = m.price === 'tiered' ? '' : 'none';
+  const tier = sizeSel?.value || 'small';
+  const showPrice = m.price === 'usd' || m.price === 'commercial' || (m.price === 'tiered' && (tier === 'large' || tier === 'xl'));
+  if(price){ price.style.display = showPrice ? '' : 'none'; price.placeholder = m.price === 'commercial' ? 'Commercial license price in USD (optional)' : 'Price in USD' + (m.price === 'usd' && t === 'model' ? ' (0 = free)' : ''); }
+}
 function toggleUploadLLM(l){
   state.uploadLLMs.has(l) ? state.uploadLLMs.delete(l) : state.uploadLLMs.add(l);
   render();
@@ -1565,24 +1688,27 @@ function renderUpload(){
     <div class="panel">
       <div class="form-grid">
         <div class="field"><label>Product type</label>
-          <select id="upType"><option>Skill</option><option>Prompt Pack</option><option>Dataset</option><option>Avatar</option><option>Fine-tuned Model / LoRA</option></select>
-          <span class="hint">Datasets get a quality audit; avatars get rights verification; models get eval &amp; license checks</span></div>
+          <select id="upType" onchange="updateUploadPricing()"><option>Skill</option><option>Prompt Pack</option><option>Dataset</option><option>Avatar</option><option>Voice</option><option>Fine-tuned Model / LoRA</option><option>Workflow</option><option>RAG Pack</option><option>Eval Suite</option><option>Asset Pack</option></select>
+          <span class="hint">Datasets get a quality audit; avatars &amp; voices get rights verification; models get eval &amp; license checks</span></div>
         <div class="field"><label>Name</label><input id="upName" placeholder="e.g. SQL Whisperer"></div>
         <div class="field"><label>Version</label><input id="upVer" placeholder="1.0.0" value="1.0.0"></div>
         <div class="field full"><label>Description</label><textarea id="upDesc" placeholder="What does your skill make an LLM great at? One or two sentences."></textarea></div>
         <div class="field"><label>Category</label><select id="upCat">${CATEGORIES.map(c=>`<option>${c}</option>`).join('')}</select></div>
-        <div class="field"><label>Tier level</label><select id="upTier"><option>Free</option><option>Starter</option><option selected>Pro</option><option>Enterprise</option></select>
-          <span class="hint">Determines which subscribers can license it</span></div>
+        <div class="field"><label>Pricing</label>
+          <div class="hint" id="upPriceInfo" style="margin-bottom:6px">Skills are auto-priced at ⬡ 5 per license — you keep 67% of every sale.</div>
+          <select id="upSizeTier" onchange="updateUploadPricing()" style="display:none">
+            <option value="small">Small — ⬡ 15 (auto)</option><option value="medium">Medium — ⬡ 30 (auto)</option>
+            <option value="large">Large — you set the $ price</option><option value="xl">XL — you set the $ price</option></select>
+          <input id="upPrice" type="number" min="0" step="0.01" placeholder="Price in USD" style="display:none;margin-top:8px"></div>
         <div class="field full"><label>LLM compatibility</label>
           <div style="display:flex;gap:9px;flex-wrap:wrap">
             ${LLMS.map(l=>`<div class="check-pill ${state.uploadLLMs.has(l)?'on':''}" role="checkbox" tabindex="0" aria-checked="${state.uploadLLMs.has(l)}" aria-label="${l}" onclick="toggleUploadLLM('${l}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">${state.uploadLLMs.has(l)?'✓ ':''}${l}${(l==='ChatGPT'||l==='Claude')?' ⭐':''}</div>`).join('')}
           </div>
           <span class="hint">⭐ Priority providers — we test these first</span></div>
-        <div class="field full"><label>Skill bundle</label>
-          <div style="border:1.5px dashed var(--border2);border-radius:12px;padding:30px;text-align:center;color:var(--muted);cursor:pointer;font-size:13.5px"
-            onclick="toast('File picker would open here — drop a .skill bundle.')">
-            📦 Drop your <code>.skill</code> bundle here or click to browse<br>
-            <span style="font-size:12px;color:var(--faint)">SKILL.md + assets, max 10 MB</span>
+        <div class="field full"><label>Product file</label>
+          <div style="border:1.5px dashed var(--border2);border-radius:12px;padding:22px;text-align:center;color:var(--muted);font-size:13.5px">
+            <input id="upFile" type="file" accept=".md,.zip" style="max-width:100%">
+            <div class="hint" id="upFileHint" style="margin-top:8px">Accepted for skills: .md, .zip · max 10 MB. This exact file is what buyers download — individually watermarked per buyer.</div>
           </div></div>
         <div class="field full"><label>Documentation (markdown)</label><textarea id="upDocs" placeholder="## Installation&#10;## Usage&#10;## Examples" style="min-height:120px;font-family:ui-monospace,monospace;font-size:12.5px"></textarea></div>
       </div>
@@ -1595,15 +1721,36 @@ function renderUpload(){
 }
 
 /* ================= ROUTER & INIT ================= */
+/* ================= DOCS (guides served as static fragments) ================= */
+function fetchDoc(kind){
+  if(state.docCache[kind] !== undefined) return;
+  state.docCache[kind] = null; // in flight
+  fetch(`docs/${kind === 'buyer' ? 'buyer-guide' : 'seller-guide'}.html`)
+    .then(r => r.ok ? r.text() : Promise.reject())
+    .then(t => { state.docCache[kind] = t; if(state.route === 'docs' || state.route === 'sellerdocs') render(); })
+    .catch(() => { state.docCache[kind] = `<div class="empty">Guide unavailable offline — view it on the live site.</div>`; if(state.route === 'docs' || state.route === 'sellerdocs') render(); });
+}
+function renderDocs(){
+  fetchDoc('buyer');
+  return `<div class="page" style="max-width:860px">${state.docCache.buyer || '<div class="empty">Loading the buyer guide…</div>'}
+    <div style="margin-top:24px"><a class="see-all" tabindex="0" role="button" onclick="go('sellerdocs')">Selling on skillz.ai? Read the seller guide →</a></div></div>`;
+}
+function renderSellerDocs(){
+  fetchDoc('seller');
+  return `<div class="page" style="max-width:860px">${state.docCache.seller || '<div class="empty">Loading the seller guide…</div>'}
+    <div style="margin-top:24px"><a class="see-all" tabindex="0" role="button" onclick="go('docs')">← Back to the buyer guide</a></div></div>`;
+}
+
 const ROUTES = {
   home: renderHome, browse: renderBrowse, skill: renderSkill,
   pricing: renderPricing, billing: renderBilling,
   dashboard: renderDashboard, upload: renderUpload,
+  docs: renderDocs, sellerdocs: renderSellerDocs,
   get admin(){ return renderAdmin; },
 };
 const NAV = [
   ['home','Home'],['browse','Browse'],['pricing','Pricing'],
-  ['dashboard','Designer Studio'],['billing','Billing'],
+  ['dashboard','Designer Studio'],['billing','Billing'],['docs','Docs'],
 ];
 function render(){
   const signedOut = window.LIVE && !window.SESSION;
@@ -1652,7 +1799,7 @@ function mapRow(r){
     category:r.category, tier:TIER_NAME[r.tier]||'Free', version:r.version,
     designer:DESIGNER_BY_NAME[(r.designer_label||'').split('@')[0].trim()] || null,
     designerLabel:r.designer_label,
-    llms:r.llms||[], format:r.format||undefined,
+    llms:r.llms||[], format:r.format||undefined, sample: r.designer_id == null,
     credits:r.credits_price??null, priceUsd:r.price_usd_cents??null, sizeTier:r.size_tier??undefined,
     rent:r.rent_price??undefined, buyout:r.buyout_price??undefined,
     score:r.score, upvotes:r.upvotes, downloads:r.downloads, rating:Number(r.rating),
@@ -1710,7 +1857,11 @@ function showAuth(){
       <div style="font-size:19px;font-weight:750;margin-bottom:4px">Welcome to skillz.ai</div>
       <div style="color:var(--muted);font-size:13.5px;margin-bottom:18px">Sign in or create an account — free plan included.</div>
       <div class="field" style="margin-bottom:12px"><label>Email</label><input id="authEmail" type="email" placeholder="you@example.com"></div>
-      <div class="field" style="margin-bottom:18px"><label>Password</label><input id="authPass" type="password" placeholder="••••••••"></div>
+      <div class="field" style="margin-bottom:12px"><label>Password</label><input id="authPass" type="password" placeholder="••••••••"></div>
+      <label style="display:flex;gap:8px;align-items:flex-start;font-size:12.5px;color:var(--muted);margin-bottom:16px;cursor:pointer">
+        <input type="checkbox" id="authTos" style="margin-top:2px">
+        <span>I agree to the <a href="legal/terms-of-service.md" target="_blank" style="color:var(--accent)">Terms of Service</a>, <a href="legal/dmca-policy.md" target="_blank" style="color:var(--accent)">DMCA</a> &amp; <a href="legal/refund-policy.md" target="_blank" style="color:var(--accent)">Refund</a> policies (required to create an account)</span>
+      </label>
       <div style="display:flex;gap:10px">
         <button class="btn btn-primary" style="flex:1" onclick="doAuth('in')">Sign in</button>
         <button class="btn btn-ghost" style="flex:1" onclick="doAuth('up')">Create account</button>
@@ -1723,6 +1874,7 @@ async function doAuth(mode){
   const email = $('authEmail').value.trim(), password = $('authPass').value;
   const msg = $('authMsg');
   if(!email || !password){ msg.textContent = 'Email and password required.'; return; }
+  if(mode === 'up' && !$('authTos')?.checked){ msg.textContent = 'Please accept the Terms, DMCA & Refund policies to create an account.'; return; }
   msg.style.color = 'var(--muted)'; msg.textContent = 'Working…';
   const fn = mode==='up' ? sb.auth.signUp({email, password}) : sb.auth.signInWithPassword({email, password});
   const {error} = await fn;
@@ -1803,7 +1955,7 @@ toggleUpvote   = async (e,id) => {
   render();
 };
 /* ---------- live upload + real security scan ---------- */
-const TYPE_FROM_LABEL = {'Skill':'skill','Prompt Pack':'prompt','Dataset':'dataset','Avatar':'avatar','Fine-tuned Model / LoRA':'model'};
+const TYPE_FROM_LABEL = {'Skill':'skill','Prompt Pack':'prompt','Dataset':'dataset','Avatar':'avatar','Voice':'voice','Fine-tuned Model / LoRA':'model','Workflow':'workflow','RAG Pack':'rag','Eval Suite':'eval','Asset Pack':'assets'};
 async function refreshProducts(){
   const {data} = await sb.from('products').select('*');
   if(data?.length){ SKILLS.length=0; data.sort((a,b)=>(a.trend_rank||999)-(b.trend_rank||999)).forEach(r=>SKILLS.push(mapRow(r))); }
@@ -1815,14 +1967,26 @@ startScan = async function(){
   const v = id => ($(id)?.value || '').trim();
   const name = v('upName');
   if(!name){ toast('Give your skill a name first.'); return; }
+  const type = TYPE_FROM_LABEL[$('upType')?.value] || 'skill';
+  const sizeTier = type === 'dataset' ? ($('upSizeTier')?.value || 'small') : null;
+  const priceStr = $('upPrice')?.style.display !== 'none' ? ($('upPrice')?.value ?? '') : '';
+  const priceCents = priceStr !== '' ? Math.round(parseFloat(priceStr) * 100) : null;
+  let filePayload = null;
+  const f = $('upFile')?.files?.[0];
+  if(f){
+    if(f.size > 10 * 1024 * 1024){ toast('⚠️ File too large — max 10 MB at MVP.'); return; }
+    try{
+      const b64 = await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(',')[1]); r.onerror = rej; r.readAsDataURL(f); });
+      filePayload = { name: f.name, base64: b64 };
+    }catch(_){ toast('⚠️ Could not read the file.'); return; }
+  }
   state.pendingName = name;
-  state.scanState = {pct:15, log:['Uploading bundle to skillz.ai…','Running automated security scan…']};
+  state.scanState = {pct:15, log:[filePayload ? `Uploading ${f.name} (${(f.size/1024).toFixed(0)} KB)…` : 'Uploading bundle to skillz.ai…','Running automated security scan…']};
   render();
   const {data, error} = await sb.functions.invoke('submit-product', {body:{
     name, version: v('upVer') || '1.0.0', description: v('upDesc'),
     category: $('upCat')?.value || 'Productivity',
-    tier: ($('upTier')?.value || 'Pro').toLowerCase(),
-    type: TYPE_FROM_LABEL[$('upType')?.value] || 'skill',
+    type, size_tier: sizeTier, price_usd_cents: priceCents, file: filePayload,
     llms: [...state.uploadLLMs], docs_markdown: v('upDocs'),
   }});
   if(error || data?.error){ state.scanState=null; render(); toast('⚠️ ' + (data?.error || error.message)); return; }
@@ -1849,6 +2013,40 @@ publishSkill = async function(){
   toast('🎉 Live on the marketplace!');
   go('skill', id);
 };
+/* ---------- real seller dashboard (studio-stats) ---------- */
+async function loadStudio(){
+  if(!window.LIVE || !window.SESSION) { state.studio = null; return; }
+  const {data} = await sb.functions.invoke('studio-stats', {body:{}});
+  if(data?.ok){ state.studio = data; if(state.route === 'dashboard') render(); }
+}
+async function studioAction(action, id, priceUsdStr){
+  const body = {action, product_id: id};
+  if(priceUsdStr != null){ const cents = Math.round(parseFloat(priceUsdStr) * 100); if(!Number.isFinite(cents) || cents < 0){ toast('Enter a valid price.'); return; } body.price_usd_cents = cents; }
+  const {data, error} = await sb.functions.invoke('studio-stats', {body});
+  if(error || data?.error){ toast('⚠️ ' + (data?.error || error.message)); return; }
+  toast('✅ Updated.');
+  await Promise.all([loadStudio(), typeof refreshProducts === 'function' ? refreshProducts() : null]);
+  render();
+}
+
+/* ---------- buyer reviews ---------- */
+async function loadReviews(id){
+  if(!window.LIVE || !id) return;
+  const {data} = await sb.from('product_reviews').select('rating, body, created_at, user_id').eq('product_id', id).order('created_at', {ascending:false});
+  state.reviews[id] = data || [];
+  if(state.route === 'skill' && state.routeArg === id) render();
+}
+async function submitReview(id){
+  if(!window.LIVE){ toast('Reviews work on the live site.'); return; }
+  if(!requireAuth()) return;
+  const rating = parseInt($('revRating')?.value || '5', 10);
+  const body = ($('revBody')?.value || '').trim().slice(0, 2000);
+  const { error } = await sb.from('product_reviews').upsert({ product_id: id, user_id: window.SESSION.user.id, rating, body }, { onConflict: 'product_id,user_id' });
+  if(error){ toast('⚠️ ' + (error.message.includes('policy') ? 'Only licensed buyers can review this product.' : error.message)); return; }
+  toast('✅ Review posted.');
+  await loadReviews(id); await refreshProducts?.(); render();
+}
+
 /* ---------- designer payout onboarding (Stripe Connect) ---------- */
 async function setupPayouts(){
   if(!requireAuth()) return;
@@ -1881,6 +2079,14 @@ function renderAdmin(){
     </div>
     <div class="panel" style="margin-bottom:16px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div style="font-weight:700">🧾 Moderation queue</div>
+        <button class="btn btn-ghost btn-sm" onclick="loadModQueue()">Refresh</button>
+      </div>
+      <div style="color:var(--muted);font-size:13px;margin-bottom:10px">Products flagged needs-review or blocked by the scanner, plus recent dollar sales (refundable). Approve publishes; unpublish takes down.</div>
+      <div id="modQueue" style="font-size:13px;color:var(--muted)">Press Refresh to load…</div>
+    </div>
+    <div class="panel" style="margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
         <div style="font-weight:700">🛡 Takedown queue</div>
         <button class="btn btn-ghost btn-sm" onclick="loadTakedowns()">Refresh</button>
       </div>
@@ -1896,6 +2102,36 @@ function renderAdmin(){
       <div id="opResult" style="margin-top:12px;font-size:12.5px;color:var(--muted);font-family:ui-monospace,monospace"></div>
     </div>
   </div>`;
+}
+async function loadModQueue(){
+  const el = $('modQueue'); if(el) el.textContent = 'Loading…';
+  const d = await adminCall('admin-moderate', {action:'queue'});
+  if(!el) return;
+  if(d.error){ el.textContent = '⚠️ ' + d.error; return; }
+  const q = (d.queue || []).map(r => `
+    <div style="border-top:1px solid var(--border);padding:10px 0">
+      <b>${esc(r.product?.name || r.product_id)}</b> <span class="mut">${r.product?.type || ''} · score ${r.score}/100 · ${r.verdict}</span>
+      ${r.product ? (r.product.published ? ' <span class="badge badge-safe">live</span>' : ' <span class="badge badge-warn">hidden</span>') : ' <span class="mut">(product gone)</span>'}
+      <div class="mut" style="font-size:12px;margin:4px 0">${(r.findings || []).slice(0, 3).map(f => `[${f.severity}] ${f.title}`).join(' · ') || 'no findings'}</div>
+      <button class="btn btn-ghost btn-sm" onclick="modAct('approve','${r.product_id}')">✓ Approve & publish</button>
+      <button class="btn btn-danger btn-sm" onclick="modAct('unpublish','${r.product_id}')">✕ Unpublish</button>
+    </div>`).join('') || '<div style="padding:8px 0">Queue is empty — nothing awaiting review. ✓</div>';
+  const sales = (d.recent_sales || []).map(s => `
+    <div style="border-top:1px solid var(--border);padding:8px 0;font-size:12.5px">
+      ${s.product_id} · $${(s.amount_cents/100).toFixed(2)} · ${(s.created_at || '').slice(0, 10)}
+      ${s.refunded_at ? '<span class="badge badge-warn">refunded</span>' : `<button class="btn btn-ghost btn-sm" onclick="modRefund('${s.id}')">↩ Refund</button>`}
+    </div>`).join('');
+  el.innerHTML = q + (sales ? `<div style="font-weight:700;margin:14px 0 4px;color:var(--text)">Recent dollar sales</div>${sales}` : '');
+}
+async function modAct(action, id){
+  const r = await adminCall('admin-moderate', {action, product_id: id, reason: action === 'unpublish' ? 'admin moderation' : undefined});
+  toast(r.ok ? `✅ ${action === 'approve' ? 'Published' : 'Unpublished'}.` : '⚠️ ' + (r.error || 'failed'));
+  loadModQueue(); if(typeof refreshProducts === 'function') refreshProducts();
+}
+async function modRefund(saleId){
+  const r = await adminCall('admin-moderate', {action:'refund', sale_id: saleId});
+  toast(r.ok ? `✅ Refunded (${r.mode}) — license ${r.license_revoked ? 'revoked' : 'n/a'}.` : '⚠️ ' + (r.error || 'failed'));
+  loadModQueue();
 }
 const FN_BASE = SUPA_URL + '/functions/v1/';
 async function adminCall(fn, body){

@@ -55,6 +55,32 @@ export function wmVideo(code: string, frames = 24): Uint8Array {
   out.set(ftyp, 0); out.set(udta, ftyp.length); out.set(mdat, ftyp.length + udta.length); return out;
 }
 const te = (s: string) => new TextEncoder().encode(s);
+
+// Watermark a REAL seller-uploaded file. Text formats get embedded marks/canaries;
+// binary formats pass through and rely on the fingerprint registry (sha256 + license trail).
+export function watermarkRealFile(bytes: Uint8Array, ext: string, id: string, code: string): WmResult {
+  const mimeMap: Record<string, string> = { md: "text/markdown", txt: "text/plain", csv: "text/csv", jsonl: "application/jsonl", svg: "image/svg+xml", zip: "application/zip", safetensors: "application/octet-stream", gguf: "application/octet-stream", wav: "audio/wav", mp3: "audio/mpeg", mp4: "video/mp4" };
+  const mime = mimeMap[ext] ?? "application/octet-stream";
+  if (ext === "md" || ext === "txt") return { bytes: te(wmText(dec.decode(bytes), code)), filename: `${id}.${ext}`, mime, method: "zero-width-text", format: ext };
+  if (ext === "csv" || ext === "jsonl") {
+    const sig = "CN" + code.split(".")[1] + code.slice(-8);
+    const lines = dec.decode(bytes).split("\n"); const positions: number[] = [];
+    for (let i = 0; i < 3; i++) {
+      const pos = Math.min(lines.length, Math.floor((i + 1) * lines.length / 4) + i);
+      const canary = ext === "jsonl" ? JSON.stringify({ id: `rec_${sig}_${i}`, _ref: sig }) : `rec_${sig}_${i},,${sig}`;
+      lines.splice(pos, 0, canary); positions.push(pos);
+    }
+    return { bytes: te(lines.join("\n")), filename: `${id}.${ext}`, mime, method: "canary-rows", format: ext, canary: { signature: sig, positions } };
+  }
+  if (ext === "svg") {
+    const mark = "\u2060" + [...toBits(code)].map((b) => (b === "0" ? "\u200B" : "\u200C")).join("") + "\u2060";
+    const s = dec.decode(bytes);
+    const out = s.includes("</svg>") ? s.replace("</svg>", `<desc>${mark}</desc></svg>`) : s + `<!--${mark}-->`;
+    return { bytes: te(out), filename: `${id}.svg`, mime, method: "svg-zero-width", format: "svg" };
+  }
+  return { bytes, filename: `${id}.${ext}`, mime, method: "registry-fingerprint", format: ext };
+}
+
 export function buildArtifact(product: any, code: string, docText: string): WmResult {
   const t = product.type; const id = product.id;
   if (["dataset", "rag"].includes(t)) {

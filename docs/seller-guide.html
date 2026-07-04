@@ -1,0 +1,145 @@
+<div class="page" style="max-width:860px">
+  <h1 style="font-size:32px;font-weight:800;margin-bottom:6px">Seller guide</h1>
+  <p style="color:var(--muted);margin-bottom:28px">How to list, price, and sell your work on skillz.ai — and get paid for it.</p>
+
+  <div class="panel docs" style="margin-bottom:18px">
+    <h2 style="font-size:20px;font-weight:700;margin-bottom:10px">Becoming a seller</h2>
+    <p style="color:var(--text);line-height:1.6">
+      Any account can become a seller. Open the upload flow from your dashboard, connect a Stripe Connect
+      account for payouts, and submit your first product. Every submission goes through an automated security
+      scan before it can go live — see below for what that checks.
+    </p>
+  </div>
+
+  <div class="panel docs" style="margin-bottom:18px">
+    <h2 style="font-size:20px;font-weight:700;margin-bottom:10px">Preparing your product</h2>
+    <p style="color:var(--text);line-height:1.6;margin-bottom:10px">Accepted file formats depend on product type:</p>
+    <table style="width:100%;border-collapse:collapse;font-size:14px;margin-bottom:12px">
+      <thead>
+        <tr style="border-bottom:1px solid var(--border)">
+          <th style="text-align:left;padding:8px 6px;color:var(--muted);font-weight:600">Product type</th>
+          <th style="text-align:left;padding:8px 6px;color:var(--muted);font-weight:600">Accepted formats</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid var(--border)"><td style="padding:8px 6px;color:var(--text)">Skills, prompt packs</td><td style="padding:8px 6px;color:var(--text)">.md or .zip</td></tr>
+        <tr style="border-bottom:1px solid var(--border)"><td style="padding:8px 6px;color:var(--text)">Datasets, RAG packs</td><td style="padding:8px 6px;color:var(--text)">.csv, .jsonl, or .zip</td></tr>
+        <tr style="border-bottom:1px solid var(--border)"><td style="padding:8px 6px;color:var(--text)">Models</td><td style="padding:8px 6px;color:var(--text)">.safetensors or .gguf</td></tr>
+        <tr style="border-bottom:1px solid var(--border)"><td style="padding:8px 6px;color:var(--text)">Voices</td><td style="padding:8px 6px;color:var(--text)">.wav or .mp3</td></tr>
+        <tr style="border-bottom:1px solid var(--border)"><td style="padding:8px 6px;color:var(--text)">Avatars</td><td style="padding:8px 6px;color:var(--text)">.mp4 or .zip</td></tr>
+        <tr><td style="padding:8px 6px;color:var(--text)">Asset packs</td><td style="padding:8px 6px;color:var(--text)">.zip or .svg</td></tr>
+      </tbody>
+    </table>
+    <p style="color:var(--text);line-height:1.6;margin-bottom:10px">
+      <b>Max file size is 10 MB per upload</b> at MVP. Split larger bundles or compress assets if you're over
+      the limit.
+    </p>
+    <p style="color:var(--text);line-height:1.6">
+      Good docs sell. Write a clear overview of what your product does, concrete usage instructions, and 1-2
+      worked examples showing real input/output. Buyers are far more likely to purchase — and less likely to
+      request a refund — when they know exactly what they're getting before they buy.
+    </p>
+  </div>
+
+  <div class="panel docs" style="margin-bottom:18px">
+    <h2 style="font-size:20px;font-weight:700;margin-bottom:10px">The security scan</h2>
+    <p style="color:var(--text);line-height:1.6;margin-bottom:10px">
+      Every upload is automatically scanned before publishing. A static analysis engine checks for malicious
+      code patterns, data exfiltration attempts, dependency issues, and over-broad permission requests, tagging
+      any findings with CWE identifiers. After publishing, a dynamic sandbox continues to monitor behavior.
+    </p>
+    <table style="width:100%;border-collapse:collapse;font-size:14px">
+      <thead>
+        <tr style="border-bottom:1px solid var(--border)">
+          <th style="text-align:left;padding:8px 6px;color:var(--muted);font-weight:600">Score</th>
+          <th style="text-align:left;padding:8px 6px;color:var(--muted);font-weight:600">Outcome</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid var(--border)"><td style="padding:8px 6px;color:var(--text)">≥ 90</td><td style="padding:8px 6px;color:var(--text)">"Verified Safe" badge, publishes automatically</td></tr>
+        <tr style="border-bottom:1px solid var(--border)"><td style="padding:8px 6px;color:var(--text)">70–89</td><td style="padding:8px 6px;color:var(--text)">Publishes without the badge</td></tr>
+        <tr style="border-bottom:1px solid var(--border)"><td style="padding:8px 6px;color:var(--text)">&lt; 70</td><td style="padding:8px 6px;color:var(--text)">Blocked from publishing</td></tr>
+        <tr><td style="padding:8px 6px;color:var(--text)">Sensitive findings</td><td style="padding:8px 6px;color:var(--text)">Routed to manual review regardless of score</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="panel docs" style="margin-bottom:18px">
+    <h2 style="font-size:20px;font-weight:700;margin-bottom:10px">Pricing your product</h2>
+    <p style="color:var(--text);line-height:1.6;margin-bottom:10px">
+      Some product types are auto-priced in credits — you don't set the price, the platform does:
+    </p>
+    <ul style="color:var(--text);line-height:1.8;margin:0 0 12px 20px">
+      <li>Skills — ⬡5 credits</li>
+      <li>Prompt packs — ⬡2 credits</li>
+      <li>Workflows — ⬡30 credits</li>
+      <li>Datasets (small) — ⬡15 credits, (medium) — ⬡30 credits</li>
+    </ul>
+    <p style="color:var(--text);line-height:1.6;margin-bottom:10px">
+      Other types are seller-priced in dollars — you choose the price:
+    </p>
+    <ul style="color:var(--text);line-height:1.8;margin:0 0 12px 20px">
+      <li>Models (can be listed free)</li>
+      <li>RAG packs, eval suites, asset packs</li>
+      <li>Large and XL datasets</li>
+      <li>Avatar / voice commercial licenses</li>
+    </ul>
+    <p style="color:var(--text);line-height:1.6;margin-bottom:10px">
+      Avatars and voices sell in two tiers: a fixed ⬡60-credit <b>personal-use pack</b>, and a
+      <b>commercial license</b> that you price in dollars yourself. Commercial licenses are perpetual — they
+      survive the buyer cancelling their subscription.
+    </p>
+    <p style="color:var(--text);line-height:1.6">
+      For datasets, choose the size tier that matches your data honestly — small and medium are fixed-credit,
+      large and XL let you set a dollar price. Mis-tiering a dataset to dodge pricing is a ToS violation.
+    </p>
+  </div>
+
+  <div class="panel docs" style="margin-bottom:18px">
+    <h2 style="font-size:20px;font-weight:700;margin-bottom:10px">Revenue split & payouts</h2>
+    <p style="color:var(--text);line-height:1.6;margin-bottom:10px">
+      skillz.ai keeps 33% of every transaction; you keep <b>67%</b>. Payouts run monthly via Stripe Connect.
+      For credit-based sales, each credit is valued at $0.50 when your payout is calculated.
+    </p>
+    <p style="color:var(--text);line-height:1.6">
+      You'll need to complete Stripe Connect onboarding before payouts can be sent to you — start this as soon
+      as you register as a seller so you're not waiting on it after your first sale.
+    </p>
+  </div>
+
+  <div class="panel docs" style="margin-bottom:18px">
+    <h2 style="font-size:20px;font-weight:700;margin-bottom:10px">Watermarking & anti-piracy protection</h2>
+    <p style="color:var(--text);line-height:1.6">
+      Every file a buyer downloads is automatically fingerprinted to them — zero-width text marks, dataset
+      canary rows, audio LSB marks, MP4 metadata and frame-level marks, safetensors metadata, or SVG marks,
+      depending on format. A daily crawler scans for leaked copies of marketplace products across the web,
+      and any match is traced back to the buyer who leaked it. This protection is automatic — you don't need
+      to do anything to enable it.
+    </p>
+  </div>
+
+  <div class="panel docs" style="margin-bottom:18px">
+    <h2 style="font-size:20px;font-weight:700;margin-bottom:10px">Unpublishing</h2>
+    <p style="color:var(--text);line-height:1.6">
+      You can unpublish your own product at any time from your seller dashboard. Unpublishing removes it from
+      the catalog for new buyers; existing buyers keep the license and access they already have (per the terms
+      above — credit-licensed items still depend on their subscription staying active).
+    </p>
+  </div>
+
+  <div class="panel docs">
+    <h2 style="font-size:20px;font-weight:700;margin-bottom:10px">Rules</h2>
+    <p style="color:var(--text);line-height:1.6;margin-bottom:10px">
+      No malware, obfuscated code, data exfiltration, or undisclosed network calls. No infringing content —
+      you must own or have the rights to everything you upload, including any training data, voice likeness,
+      or avatar likeness.
+    </p>
+    <p style="color:var(--text);line-height:1.6">
+      If you believe a listed product infringes your rights, send a DMCA takedown notice to
+      <code style="background:var(--surface2);padding:2px 6px;border-radius:4px;border:1px solid var(--border)">support@skillz.ai</code>
+      with a description of the work, the infringing listing's URL, and a statement of good faith belief and
+      accuracy under penalty of perjury. We'll review and take down qualifying content promptly, and notify the
+      seller per our DMCA policy.
+    </p>
+  </div>
+</div>

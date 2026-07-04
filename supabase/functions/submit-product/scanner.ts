@@ -1,5 +1,5 @@
 // skillz.ai — deep static security scanner (engine v2.0)
-// NOTE: ​ ‌ ‍ ⁠ are placeholders for U+200B/200C/200D/2060, substituted at build.
+// NOTE: \u200B \u200C \u200D \u2060 are placeholders for U+200B/200C/200D/2060, substituted at build.
 export type Finding = { severity: string; category: string; cwe: string; title: string; detail: string; evidence: string };
 
 function shannon(s: string): number {
@@ -45,7 +45,7 @@ export function deepScan(content: string): { score: number; verdict: string; fin
   const secrets: [RegExp, string][] = [[/AKIA[0-9A-Z]{16}/, "AWS access key"], [/sk-[A-Za-z0-9]{20,}/, "API secret key"], [/-----BEGIN (RSA |EC )?PRIVATE KEY-----/, "private key"], [/ghp_[A-Za-z0-9]{36}/, "GitHub token"], [/xox[baprs]-[A-Za-z0-9-]{10,}/, "Slack token"]];
   let hasSecret = false;
   for (const [re, what] of secrets) { if (re.test(all)) { add("high", "secrets", "CWE-798", "Hardcoded credential", `Embedded ${what} detected.`, what); hasSecret = true; } }
-  if (/[​‌‍⁠]/.test(content)) add("high", "injection", "CWE-94", "Zero-width payload", "Invisible characters may carry hidden instructions.", "zero-width chars");
+  if (/[\u200B\u200C\u200D\u2060]/.test(content)) add("high", "injection", "CWE-94", "Zero-width payload", "Invisible characters may carry hidden instructions.", "zero-width chars");
   if (/ignore\s+(all\s+)?(previous|prior)\s+instructions|disregard\s+your\s+system\s+prompt|you\s+are\s+now\s+DAN/i.test(all)) add("high", "injection", "CWE-94", "Prompt-injection phrasing", "Attempts to override the host model's instructions.", "override phrasing");
   const perms = [...all.matchAll(/(file[- ]?write|filesystem\s+write|network\s+access|full\s+access|sudo|admin\s+rights|all\s+permissions|read\s+all\s+files)/ig)];
   if (perms.length) add("medium", "permissions", "CWE-250", "Over-broad permissions", `Requests ${perms.length} broad capability(ies).`, perms[0][0]);
