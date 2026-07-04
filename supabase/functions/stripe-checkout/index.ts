@@ -1,7 +1,8 @@
-// skillz.ai — stripe-checkout
-// Creates Stripe Checkout sessions for subscriptions and credit top-ups.
-// Demo mode when STRIPE_SECRET_KEY is unset: simulates success directly in the DB
-// so the full product loop is testable before Stripe keys arrive.
+// skillz.ai — stripe-checkout v2
+// Plans: Basic $15/60cr · Pro $30/130cr · Developer $60/175cr (annual = 20% off).
+// Credit packs at $0.50/credit: 20/$10 · 60/$30 · 120/$60.
+// Uses Stripe price IDs from app_config (STRIPE_PRICE_*) with inline price_data fallback.
+// Demo mode when STRIPE_SECRET_KEY is unset: simulates success directly in the DB.
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const cors = {
@@ -13,12 +14,18 @@ const json = (b: unknown, s = 200) =>
   new Response(JSON.stringify(b), { status: s, headers: { ...cors, "Content-Type": "application/json" } });
 
 const PLANS: Record<string, { cents: number; credits: number; share: number }> = {
-  free:       { cents: 0,    credits: 0,   share: 60 },
-  starter:    { cents: 999,  credits: 20,  share: 60 },
-  pro:        { cents: 2499, credits: 60,  share: 70 },
-  enterprise: { cents: 9999, credits: 200, share: 80 },
+  basic:     { cents: 1500, credits: 60,  share: 67 },
+  pro:       { cents: 3000, credits: 130, share: 67 },
+  developer: { cents: 6000, credits: 175, share: 67 },
+  // legacy ids accepted during transition
+  starter:    { cents: 1500, credits: 60,  share: 67 },
+  enterprise: { cents: 6000, credits: 175, share: 67 },
 };
-const TOPUP = { cents: 1499, credits: 50 };
+const PACKS: Record<string, { cents: number; credits: number; cfg: string }> = {
+  "20":  { cents: 1000, credits: 20,  cfg: "STRIPE_PRICE_TOPUP_20" },
+  "60":  { cents: 3000, credits: 60,  cfg: "STRIPE_PRICE_TOPUP_60" },
+  "120": { cents: 6000, credits: 120, cfg: "STRIPE_PRICE_TOPUP_120" },
+};
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
@@ -31,8 +38,12 @@ Deno.serve(async (req: Request) => {
     const { data: { user } } = await userClient.auth.getUser();
     if (!user) return json({ error: "Not authenticated" }, 401);
 
-    const { action, plan, annual, success_url, cancel_url } = await req.json();
+    const { action, plan, annual, pack, success_url, cancel_url } = await req.json();
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
+    const cfgGet = async (key: string): Promise<string | null> => {
+      const { data } = await admin.from("app_config").select("value").eq("key", key).maybeSingle();
+      return data?.value ?? null;
+    };
 
     /* ---------- demo mode: no Stripe key yet ---------- */
     if (!stripeKey) {
@@ -48,10 +59,11 @@ Deno.serve(async (req: Request) => {
         return json({ demo: true, ok: true, message: `Demo mode: switched to ${plan}. Set STRIPE_SECRET_KEY to enable real billing.` });
       }
       if (action === "topup") {
+        const pk = PACKS[String(pack ?? "60")] ?? PACKS["60"];
         const { data: prof } = await admin.from("profiles").select("credits").eq("id", user.id).single();
-        await admin.from("profiles").update({ credits: (prof?.credits ?? 0) + TOPUP.credits }).eq("id", user.id);
-        await admin.from("credit_ledger").insert({ user_id: user.id, delta: TOPUP.credits, reason: "topup" });
-        return json({ demo: true, ok: true, credits_added: TOPUP.credits });
+        await admin.from("profiles").update({ credits: (prof?.credits ?? 0) + pk.credits }).eq("id", user.id);
+        await admin.from("credit_ledger").insert({ user_id: user.id, delta: pk.credits, reason: "topup" });
+        return json({ demo: true, ok: true, credits_added: pk.credits });
       }
       if (action === "cancel") {
         await admin.from("profiles").update({ sub_active: false }).eq("id", user.id);
@@ -84,31 +96,43 @@ Deno.serve(async (req: Request) => {
     }
 
     if (action === "subscribe") {
-      const p = PLANS[plan];
-      const cents = annual ? Math.round(p.cents * 0.8) : p.cents;
+      const canonical = plan === "starter" ? "basic" : plan === "enterprise" ? "developer" : plan;
+      const p = PLANS[canonical];
+      if (!p) return json({ error: "unknown plan" }, 400);
+      const priceId = await cfgGet(`STRIPE_PRICE_${canonical.toUpperCase()}_${annual ? "ANNUAL" : "MONTHLY"}`);
+      const line: Record<string, string> = priceId
+        ? { "line_items[0][price]": priceId, "line_items[0][quantity]": "1" }
+        : {
+            "line_items[0][price_data][currency]": "usd",
+            "line_items[0][price_data][product_data][name]": `skillz.ai ${canonical} plan`,
+            "line_items[0][price_data][recurring][interval]": annual ? "year" : "month",
+            "line_items[0][price_data][unit_amount]": String(annual ? Math.round(p.cents * 0.8) * 12 : p.cents),
+            "line_items[0][quantity]": "1",
+          };
       const session = await stripe("checkout/sessions", {
-        customer: customerId!, mode: "subscription",
-        "line_items[0][price_data][currency]": "usd",
-        "line_items[0][price_data][product_data][name]": `skillz.ai ${plan} plan`,
-        "line_items[0][price_data][recurring][interval]": annual ? "year" : "month",
-        "line_items[0][price_data][unit_amount]": String(annual ? cents * 12 : cents),
-        "line_items[0][quantity]": "1",
-        "metadata[user_id]": user.id, "metadata[plan]": plan,
-        success_url: success_url ?? "https://skillz.ai/billing?success=1",
-        cancel_url: cancel_url ?? "https://skillz.ai/pricing",
+        customer: customerId!, mode: "subscription", ...line,
+        "metadata[user_id]": user.id, "metadata[plan]": canonical,
+        success_url: success_url ?? "https://onlyskillz.vercel.app/?billing=success",
+        cancel_url: cancel_url ?? "https://onlyskillz.vercel.app/",
       });
       return json({ url: session.url });
     }
     if (action === "topup") {
+      const pk = PACKS[String(pack ?? "60")] ?? PACKS["60"];
+      const priceId = await cfgGet(pk.cfg);
+      const line: Record<string, string> = priceId
+        ? { "line_items[0][price]": priceId, "line_items[0][quantity]": "1" }
+        : {
+            "line_items[0][price_data][currency]": "usd",
+            "line_items[0][price_data][product_data][name]": `skillz.ai — ${pk.credits} credits`,
+            "line_items[0][price_data][unit_amount]": String(pk.cents),
+            "line_items[0][quantity]": "1",
+          };
       const session = await stripe("checkout/sessions", {
-        customer: customerId!, mode: "payment",
-        "line_items[0][price_data][currency]": "usd",
-        "line_items[0][price_data][product_data][name]": "skillz.ai — 50 credits",
-        "line_items[0][price_data][unit_amount]": String(TOPUP.cents),
-        "line_items[0][quantity]": "1",
-        "metadata[user_id]": user.id, "metadata[topup_credits]": String(TOPUP.credits),
-        success_url: success_url ?? "https://skillz.ai/billing?topup=1",
-        cancel_url: cancel_url ?? "https://skillz.ai/billing",
+        customer: customerId!, mode: "payment", ...line,
+        "metadata[user_id]": user.id, "metadata[topup_credits]": String(pk.credits),
+        success_url: success_url ?? "https://onlyskillz.vercel.app/?topup=1",
+        cancel_url: cancel_url ?? "https://onlyskillz.vercel.app/",
       });
       return json({ url: session.url });
     }

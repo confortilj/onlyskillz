@@ -1,11 +1,11 @@
 // skillz.ai — multi-format forensic watermark engine (v3: + MP4 video)
-// NOTE: ⁠ ​ ‌ are placeholders for U+2060 / U+200B / U+200C, substituted at build.
+// NOTE: \u2060 \u200B \u200C are placeholders for U+2060 / U+200B / U+200C, substituted at build.
 const enc = new TextEncoder(); const dec = new TextDecoder();
 const toBits = (s: string) => [...enc.encode(s)].map((b) => b.toString(2).padStart(8, "0")).join("");
 export type WmResult = { bytes: Uint8Array; filename: string; mime: string; method: string; format: string; canary?: { signature: string; positions: number[] } };
 
 export function wmText(text: string, code: string): string {
-  const mark = "⁠" + [...toBits(code)].map((b) => (b === "0" ? "​" : "‌")).join("") + "⁠";
+  const mark = "\u2060" + [...toBits(code)].map((b) => (b === "0" ? "\u200B" : "\u200C")).join("") + "\u2060";
   const L = text.split("\n"); const mid = Math.floor(L.length / 2);
   L[0] += mark; if (L.length > 2) { L[mid] += mark; L[L.length - 1] += mark; }
   return L.join("\n");
@@ -39,7 +39,7 @@ export function wmModel(code: string): Uint8Array {
   new DataView(out.buffer).setBigUint64(0, BigInt(hjson.length), true); out.set(hjson, 8); out.set(tensor, 8 + hjson.length); return out;
 }
 export function wmSvg(code: string): string {
-  const mark = "⁠" + [...toBits(code)].map((b) => (b === "0" ? "​" : "‌")).join("") + "⁠";
+  const mark = "\u2060" + [...toBits(code)].map((b) => (b === "0" ? "\u200B" : "\u200C")).join("") + "\u2060";
   return `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><metadata>skillz.ai licensed asset</metadata><desc>${mark}</desc><rect width="64" height="64" fill="#8b6cff"/></svg>`;
 }
 function u32(n: number) { return [(n >>> 24) & 255, (n >>> 16) & 255, (n >>> 8) & 255, n & 255]; }

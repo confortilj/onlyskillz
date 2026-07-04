@@ -1,8 +1,19 @@
-// skillz.ai — acquire v3: license + multi-format watermark (+video) + receipt email
+// skillz.ai — acquire v4: plan-type access + credit/USD pricing + multi-format watermark + receipt email
+// Pricing model: Basic (skills/prompts/models), Pro (+avatars/voices), Developer (everything).
+// Credit-priced items charge credits; seller-priced items ($) return a Stripe Checkout URL,
+// and the license is granted by the stripe-webhook on payment. Platform keeps 33%.
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { buildArtifact } from "./watermark.ts";
-const PLAN_RANK: Record<string, number> = { free: 0, starter: 1, pro: 2, enterprise: 3 };
-const CREDIT_TYPES = ["dataset", "model", "rag", "assets"]; const RENTAL_TYPES = ["avatar", "voice"];
+
+const PLAN_TYPES: Record<string, string[]> = {
+  basic:     ["skill", "prompt", "model"],
+  pro:       ["skill", "prompt", "model", "avatar", "voice"],
+  developer: ["skill", "prompt", "model", "avatar", "voice", "dataset", "workflow", "rag", "eval", "assets"],
+  // legacy plan ids map to nearest new plan
+  free: [], starter: ["skill", "prompt", "model"], enterprise: ["skill", "prompt", "model", "avatar", "voice", "dataset", "workflow", "rag", "eval", "assets"],
+};
+const PLAN_LABEL: Record<string, string> = { skill: "Basic", prompt: "Basic", model: "Basic", avatar: "Pro", voice: "Pro", dataset: "Developer", workflow: "Developer", rag: "Developer", eval: "Developer", assets: "Developer" };
+
 const cors = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type", "Access-Control-Allow-Methods": "POST, OPTIONS" };
 const json = (b: unknown, s = 200) => new Response(JSON.stringify(b), { status: s, headers: { ...cors, "Content-Type": "application/json" } });
 async function sha256Hex(bytes: Uint8Array): Promise<string> { const d = await crypto.subtle.digest("SHA-256", bytes); return [...new Uint8Array(d)].map((b) => b.toString(16).padStart(2, "0")).join(""); }
@@ -17,25 +28,67 @@ Deno.serve(async (req: Request) => {
     const admin = createClient(supaUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     const { data: { user }, error: authErr } = await userClient.auth.getUser();
     if (authErr || !user) return json({ error: "Not authenticated" }, 401);
-    const { product_id, mode } = await req.json();
+    const { product_id, mode, success_url, cancel_url } = await req.json();
     if (!product_id) return json({ error: "product_id required" }, 400);
     const { data: product } = await admin.from("products").select("*").eq("id", product_id).single();
     if (!product || !product.published) return json({ error: "Product not found" }, 404);
     const { data: profile } = await admin.from("profiles").select("*").eq("id", user.id).single();
     if (!profile) return json({ error: "Profile missing" }, 500);
     if (!profile.sub_active) return json({ error: "Subscription lapsed — reactivate to acquire items" }, 403);
+
+    // ---- plan-type access gate ----
+    const allowed = PLAN_TYPES[profile.plan] ?? [];
+    if (!allowed.includes(product.type)) {
+      return json({ error: `Your plan does not include ${product.type}s — requires the ${PLAN_LABEL[product.type] ?? "Developer"} plan or higher` }, 403);
+    }
+
     const { data: existing } = await admin.from("licenses").select("*").eq("user_id", user.id).eq("product_id", product_id).maybeSingle();
     let license = existing; let newlyIssued = false;
     if (!existing) {
-      newlyIssued = true; let kind = "subscription"; let creditCost = 0; let status = "active";
-      if (RENTAL_TYPES.includes(product.type)) { if (mode === "buyout") { kind = "buyout"; creditCost = product.buyout_price; status = "perpetual"; } else { kind = "rental"; creditCost = product.rent_price; } }
-      else if (CREDIT_TYPES.includes(product.type)) { kind = "credit_purchase"; creditCost = product.credits_price ?? 0; }
-      else { if (PLAN_RANK[profile.plan] < PLAN_RANK[product.tier]) return json({ error: `Requires the ${product.tier} plan or higher` }, 403); }
-      if (creditCost > 0) { if (profile.credits < creditCost) return json({ error: `Not enough credits: need ${creditCost}, have ${profile.credits}` }, 402);
+      // ---- pricing: credits vs seller-set USD ----
+      let creditCost = 0; let usdCents = 0; let kind = "credit_purchase"; let status = "active";
+      if (product.type === "avatar" || product.type === "voice") {
+        if (mode === "commercial") { usdCents = product.price_usd_cents ?? 0; kind = "buyout"; status = "perpetual"; }
+        else { creditCost = product.credits_price ?? 60; }              // personal-use pack
+      } else if (product.credits_price != null) {
+        creditCost = product.credits_price;                              // skills 5, prompts 2, workflows 30, datasets S/M 15/30
+      } else {
+        usdCents = product.price_usd_cents ?? 0;                         // models, large datasets, rag/eval/asset packs (0 = free)
+        if (usdCents > 0) { kind = "buyout"; status = "perpetual"; }
+      }
+
+      // ---- seller-priced ($) items: hand off to Stripe Checkout; webhook grants the license ----
+      if (usdCents > 0) {
+        const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
+        if (!stripeKey) return json({ error: "Card payments are not enabled yet — STRIPE_SECRET_KEY missing" }, 503);
+        let customerId = profile.stripe_customer_id;
+        const sfetch = (path: string, body: Record<string, string>) =>
+          fetch(`https://api.stripe.com/v1/${path}`, { method: "POST", headers: { Authorization: `Bearer ${stripeKey}`, "Content-Type": "application/x-www-form-urlencoded" }, body: new URLSearchParams(body) }).then((r) => r.json());
+        if (!customerId) { const cust = await sfetch("customers", { email: user.email ?? "", "metadata[user_id]": user.id }); customerId = cust.id; await admin.from("profiles").update({ stripe_customer_id: customerId }).eq("id", user.id); }
+        const session = await sfetch("checkout/sessions", {
+          customer: customerId!, mode: "payment",
+          "line_items[0][price_data][currency]": "usd",
+          "line_items[0][price_data][product_data][name]": `skillz.ai — ${product.name}${mode === "commercial" ? " (commercial license)" : ""}`,
+          "line_items[0][price_data][unit_amount]": String(usdCents),
+          "line_items[0][quantity]": "1",
+          "metadata[user_id]": user.id, "metadata[product_id]": product_id,
+          "metadata[license_kind]": kind, "metadata[license_status]": status,
+          "metadata[amount_cents]": String(usdCents),
+          success_url: success_url ?? "https://onlyskillz.vercel.app/?purchase=success",
+          cancel_url: cancel_url ?? "https://onlyskillz.vercel.app/",
+        });
+        if (!session.url) return json({ error: session?.error?.message ?? "Could not start checkout" }, 502);
+        return json({ checkout: true, url: session.url, amount_cents: usdCents });
+      }
+
+      // ---- credit-priced (or free) items: charge credits and license immediately ----
+      if (creditCost > 0) {
+        if (profile.credits < creditCost) return json({ error: `Not enough credits: need ${creditCost}, have ${profile.credits}` }, 402);
         await admin.from("profiles").update({ credits: profile.credits - creditCost }).eq("id", user.id);
-        await admin.from("credit_ledger").insert({ user_id: user.id, delta: -creditCost, reason: kind, product_id }); }
+        await admin.from("credit_ledger").insert({ user_id: user.id, delta: -creditCost, reason: kind, product_id });
+      }
       const { data: lic, error: licErr } = await admin.from("licenses").insert({ user_id: user.id, product_id, kind, status, license_key: `sk-live-${rand(8)}-${rand(8)}-${rand(8)}`, credits_spent: creditCost }).select().single();
-      if (licErr) return json({ error: licErr.message }, 500); license = lic;
+      if (licErr) return json({ error: licErr.message }, 500); license = lic; newlyIssued = true;
       await admin.from("products").update({ downloads: (product.downloads ?? 0) + 1 }).eq("id", product_id);
     } else if (existing.status === "deactivated") return json({ error: "License deactivated — reactivate your subscription" }, 403);
 

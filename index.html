@@ -594,7 +594,7 @@ SKILLS.push(
   {id:'av1', type:'avatar', icon:'🧑‍💼', name:'Nova — Corporate Presenter', designer:'d1', category:'Design', tier:'Starter', version:'2.3', rent:15, buyout:400, format:'4K video avatar',
    desc:'Photorealistic 4K presenter with lip-sync in 32 languages. Script in, broadcast-ready video out — product updates, training, and demos.',
    llms:[], score:98, upvotes:1340, downloads:5400, rating:4.9, featured:true, trendRank:14, updated:'2026-06-08', sizeKb:0,
-   meta:[['Format','4K video avatar'],['Languages','32 (lip-sync)'],['Rent','⬡ 15 / month'],['Buyout','⬡ 400 · exclusive'],['Turnaround','~90 sec/min of video']],
+   meta:[['Format','4K video avatar'],['Languages','32 (lip-sync)'],['Personal use','⬡ 60'],['Commercial','$200 · perpetual'],['Turnaround','~90 sec/min of video']],
    docs:{overview:'Nova is built from a fully consented likeness with motion capture across 40+ gesture sets. Feed a script (or let your LLM write one) and receive rendered video with natural pacing, gestures, and emphasis.',
      install:'skillz avatar rent nova --key $SKILLZ_LICENSE',
      usage:'Rent for unlimited renders while subscribed (non-exclusive), or buy out for exclusive rights — Nova is then delisted for everyone else.',
@@ -607,7 +607,7 @@ SKILLS.push(
   {id:'av2', type:'avatar', icon:'🎙️', name:'Atlas — Narrator Voice', designer:'d2', category:'Design', tier:'Free', version:'1.8', rent:8, buyout:220, format:'Voice avatar',
    desc:'Warm, documentary-grade narration voice. Perfect for audiobooks, e-learning, and product walkthroughs. 11 languages.',
    llms:[], score:96, upvotes:892, downloads:7800, rating:4.8, featured:false, trendRank:16, updated:'2026-05-30', sizeKb:0,
-   meta:[['Format','Voice avatar (TTS)'],['Languages','11'],['Rent','⬡ 8 / month'],['Buyout','⬡ 220 · exclusive'],['Output','48kHz WAV / MP3']],
+   meta:[['Format','Voice avatar (TTS)'],['Languages','11'],['Personal use','⬡ 60'],['Commercial','$110 · perpetual'],['Output','48kHz WAV / MP3']],
    docs:{overview:'Atlas delivers long-form narration with controllable pacing, emphasis tags, and chapter-aware tone shifts. SSML-compatible with extensions for emotional register.',
      install:'skillz avatar rent atlas --key $SKILLZ_LICENSE',
      usage:'Stream text or batch-render chapters. Rentals include unlimited renders for internal and published use (non-exclusive).',
@@ -620,7 +620,7 @@ SKILLS.push(
   {id:'av3', type:'avatar', icon:'🤖', name:'Pixel — Animated Brand Mascot', designer:'d4', category:'Design', tier:'Starter', version:'1.2', rent:12, buyout:350, format:'2D animation rig',
    desc:'Customizable animated mascot with 200+ rigged expressions. Recolor to your brand, drive it with text — instant explainer videos and reaction clips.',
    llms:[], score:94, upvotes:520, downloads:2900, rating:4.6, featured:false, trendRank:19, updated:'2026-05-18', sizeKb:0,
-   meta:[['Format','2D animation rig'],['Expressions','200+ rigged'],['Rent','⬡ 12 / month'],['Buyout','⬡ 350 · exclusive'],['Output','MP4 / Lottie / GIF']],
+   meta:[['Format','2D animation rig'],['Expressions','200+ rigged'],['Personal use','⬡ 60'],['Commercial','$175 · perpetual'],['Output','MP4 / Lottie / GIF']],
    docs:{overview:'Pixel ships as a fully rigged character with a brand-theming layer (colors, accessories, logo placement). Drive animations from plain text — the rig maps sentiment and emphasis to expression and gesture.',
      install:'skillz avatar rent pixel --key $SKILLZ_LICENSE',
      usage:'Theme once, then generate clips from scripts. Export MP4 for video, Lottie for web, GIF for chat.',
@@ -726,7 +726,7 @@ SKILLS.push(
   {id:'vc1', type:'voice', icon:'🎤', name:'Vera — Conversational Voice', designer:'d1', category:'Design', tier:'Starter', version:'3.0', rent:10, buyout:280, format:'Real-time voice (TTS)',
    desc:'Low-latency conversational voice tuned for agents that talk — natural disfluencies, interruption handling, 9 languages at 140ms.',
    llms:[], score:97, upvotes:1012, downloads:6200, rating:4.8, featured:false, trendRank:26, updated:'2026-06-09', sizeKb:0,
-   meta:[['Format','Streaming TTS'],['Latency','~140 ms first-token'],['Languages','9'],['Rent','⬡ 10 / month'],['Buyout','⬡ 280 · exclusive']],
+   meta:[['Format','Streaming TTS'],['Latency','~140 ms first-token'],['Languages','9'],['Personal use','⬡ 60'],['Commercial','$140 · perpetual']],
    docs:{overview:'Vera is built for live conversation, not narration: she handles interruptions gracefully, uses natural hesitations, and shifts register with conversational context. Consented voice talent on royalty share.',
      install:'skillz avatar rent vera --key $SKILLZ_LICENSE',
      usage:'Stream tokens from your LLM straight into the synthesis endpoint. WebRTC and websocket interfaces included.',
@@ -763,18 +763,41 @@ SKILLS.push(
      {name:'Content compliance', status:'pass', note:'All assets policy-screened.'}]}}
 );
 
+/* ---- Pricing model v2: normalize seed prices (live rows arrive pre-priced from the DB) ----
+   skills ⬡5 · prompts ⬡2 · workflows ⬡30 · datasets ⬡15 (S) / ⬡30 (M) / $ (L+XL, seller-set)
+   avatars & voices: ⬡60 personal / $ commercial (seller-set) · models & rag/eval/asset packs: seller-priced $, can be free.
+   MCP connectors are removed from the marketplace. Platform keeps 33% of every transaction. */
+for(let i = SKILLS.length - 1; i >= 0; i--) if(SKILLS[i].type === 'mcp') SKILLS.splice(i, 1);
+SKILLS.forEach(s => {
+  const t = s.type || 'skill';
+  const flat = {skill: 5, prompt: 2, workflow: 30};
+  if(flat[t] != null){ s.credits = flat[t]; s.priceUsd = null; }
+  else if(t === 'avatar' || t === 'voice'){ s.priceUsd = (s.buyout || 0) * 50; s.credits = 60; }
+  else if(t === 'dataset'){
+    s.sizeTier = s.sizeTier || (s.id === 'ds1' ? 'small' : s.id === 'ds2' ? 'medium' : 'large');
+    if(s.sizeTier === 'small'){ s.credits = 15; s.priceUsd = null; }
+    else if(s.sizeTier === 'medium'){ s.credits = 30; s.priceUsd = null; }
+    else { s.priceUsd = (s.credits || 70) * 50; s.credits = null; }
+  }
+  else { s.priceUsd = (s.credits || 0) * 50 || ({ev1: 3000}[s.id] ?? 0); s.credits = null; } // model / rag / eval / assets
+});
+
 const PLANS = [
-  {id:'free', name:'Free', mo:0, skills:'3 skills', share:null, popular:false, credits:0,
-   feats:['3 active skill licenses','Community skills & prompt packs','No marketplace credits','Standard security scans','Docs & examples access','Community support']},
-  {id:'starter', name:'Starter', mo:9.99, skills:'10 skills', share:60, popular:false, credits:20,
-   feats:['10 active skill licenses','⬡ 20 credits/mo — datasets, avatars & models','Free + Starter tier items','Standard security scans','Email support','Designer payouts: 60% share']},
-  {id:'pro', name:'Pro', mo:24.99, skills:'Unlimited', share:70, popular:true, credits:60,
-   feats:['Unlimited skill licenses','⬡ 60 credits/mo — datasets, avatars & models','Free, Starter + Pro tier items','Priority security re-scans','Early access to new releases','Priority support','Designer payouts: 70% share']},
-  {id:'enterprise', name:'Enterprise', mo:99.99, skills:'Unlimited', share:80, popular:false, credits:200,
-   feats:['Unlimited licenses + 10 team seats','⬡ 200 credits/mo — pooled across team','All tiers incl. Enterprise items','SSO & audit logs','Private team skills & datasets','Dedicated account manager','Designer payouts: 80% share']},
+  {id:'basic', name:'Basic', mo:15, skills:'Skills · prompts · models', share:67, popular:false, credits:60,
+   feats:['⬡ 60 credits/mo','Skills — ⬡ 5 each','Prompt packs — ⬡ 2 each','Fine-tuned models (seller-priced, some free)','Standard security scans','Email support']},
+  {id:'pro', name:'Pro', mo:30, skills:'+ Avatars & voices', share:67, popular:true, credits:130,
+   feats:['⬡ 130 credits/mo','Everything in Basic','Avatar & voice personal packs — ⬡ 60','Commercial licenses (seller-priced)','Priority security re-scans','Priority support']},
+  {id:'developer', name:'Developer', mo:60, skills:'Everything', share:67, popular:false, credits:175,
+   feats:['⬡ 175 credits/mo','Everything in Pro','Datasets — ⬡ 15 small / ⬡ 30 medium','Large & XL datasets (seller-priced)','Workflows — ⬡ 30 each','RAG, eval & asset packs (seller-priced)','Early access to new releases']},
 ];
-const TIER_RANK = {free:0, starter:1, pro:2, enterprise:3};
-const SKILL_TIER_RANK = {Free:0, Starter:1, Pro:2, Enterprise:3};
+// Plan → product-type access (legacy plan ids map to their nearest new plan)
+const PLAN_TYPES = {
+  basic:     ['skill','prompt','model'],
+  pro:       ['skill','prompt','model','avatar','voice'],
+  developer: ['skill','prompt','model','avatar','voice','dataset','workflow','rag','eval','assets'],
+  free: [], starter: ['skill','prompt','model'], enterprise: ['skill','prompt','model','avatar','voice','dataset','workflow','rag','eval','assets'],
+};
+const TYPE_MIN_PLAN = {skill:'Basic', prompt:'Basic', model:'Basic', avatar:'Pro', voice:'Pro', dataset:'Developer', workflow:'Developer', rag:'Developer', eval:'Developer', assets:'Developer'};
 
 /* ================= STATE ================= */
 let state = {
@@ -815,10 +838,12 @@ function scoreBadge(score, type){
   if(score >= 75) return `<span class="badge badge-warn">🛡 ${score} · Review advised</span>`;
   return `<span class="badge badge-risk">🛡 ${score} · Issues found</span>`;
 }
+const usdStr = c => '$' + (c/100).toLocaleString('en-US', {minimumFractionDigits: c%100 ? 2 : 0, maximumFractionDigits: 2});
 function priceBadge(s){
-  if(CREDIT_TYPES.includes(s.type)) return `<span class="badge badge-tier">⬡ ${s.credits} credits</span>`;
-  if(RENTAL_TYPES.includes(s.type)) return `<span class="badge badge-tier">⬡ ${s.rent}/mo · ⬡ ${s.buyout} buyout</span>`;
-  return `<span class="badge badge-tier">${s.tier}</span>`;
+  if(RENTAL_TYPES.includes(s.type)) return `<span class="badge badge-tier">⬡ ${s.credits ?? 60} personal${s.priceUsd ? ` · ${usdStr(s.priceUsd)} commercial` : ''}</span>`;
+  if(s.credits != null && s.credits > 0) return `<span class="badge badge-tier">⬡ ${s.credits}</span>`;
+  if(s.priceUsd) return `<span class="badge badge-tier">${usdStr(s.priceUsd)}</span>`;
+  return `<span class="badge badge-tier">Free</span>`;
 }
 function llmBadges(llms, max){
   const shown = max ? llms.slice(0,max) : llms;
@@ -827,7 +852,7 @@ function llmBadges(llms, max){
   return html;
 }
 function canDownload(skill){
-  return state.subActive && TIER_RANK[state.plan] >= SKILL_TIER_RANK[skill.tier];
+  return state.subActive && (PLAN_TYPES[state.plan] || []).includes(skill.type || 'skill');
 }
 function toast(msg){
   const t = $('toast'); t.innerHTML = msg; t.classList.add('show');
@@ -839,8 +864,9 @@ function designerOf(s){
   const at = label.indexOf('@');
   return at > -1 ? {name: label.slice(0, at).trim(), handle: '@'+label.slice(at+1)} : {name: label, handle: ''};
 }
-function topUp(){ // demo behavior; overridden in live mode
-  state.credits += 50; toast('⬡ 50 credits added — $14.99 charged.'); render();
+function topUp(pack){ // demo behavior; overridden in live mode
+  const n = pack || 60;
+  state.credits += n; toast(`⬡ ${n} credits added — $${(n*0.5).toFixed(2)} charged.`); render();
 }
 function authClick(){ toast('Demo mode — accounts activate when connected to the live backend.'); }
 function toggleTheme(){
@@ -929,7 +955,7 @@ function renderHome(){
 
     <div class="section-head">
       <div><div class="section-title">🧬 New product lines</div>
-      <div class="section-sub">Datasets for training, avatars to rent or own, models &amp; prompt packs</div></div>
+      <div class="section-sub">Datasets for training, avatars &amp; voices to license, models &amp; prompt packs</div></div>
       <a class="see-all" tabindex="0" role="button" onclick="state.typeF='dataset';go('browse')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">Explore →</a>
     </div>
     <div class="grid grid-4">${['ds1','av1','md1','pp1'].map(id=>skillCard(SKILLS.find(s=>s.id===id))).join('')}</div>
@@ -994,16 +1020,12 @@ function renderBrowse(){
     <h1 style="font-size:30px;font-weight:800;letter-spacing:-.025em">Browse the marketplace</h1>
     <p style="color:var(--muted);margin:6px 0 22px">${SKILLS.length} assets · all scanned &amp; verified · prioritized for ChatGPT &amp; Claude</p>
     <div class="chip-row" style="margin-bottom:18px">
-      ${[['All','All products'],['skill','Skills'],['prompt','Prompts'],['dataset','Datasets'],['avatar','Avatars'],['voice','Voices'],['model','Models'],['mcp','MCP Connectors'],['workflow','Workflows'],['rag','RAG Packs'],['eval','Eval Suites'],['assets','Asset Packs']]
+      ${[['All','All products'],['skill','Skills'],['prompt','Prompts'],['dataset','Datasets'],['avatar','Avatars'],['voice','Voices'],['model','Models'],['workflow','Workflows'],['rag','RAG Packs'],['eval','Eval Suites'],['assets','Asset Packs']]
         .map(([v,l])=>`<button class="chip ${state.typeF===v?'on':''}" onclick="state.typeF='${v}';render()">${l}</button>`).join('')}
     </div>
     <div class="filter-bar">
       <input type="search" aria-label="Search skills, designers, and categories" placeholder="Search skills, designers, categories..." value="${esc(state.search)}"
         oninput="state.search=this.value;renderPartial()">
-      <select onchange="state.tierF=this.value;renderPartial()">
-        <option ${state.tierF==='All'?'selected':''} value="All">All tiers</option>
-        ${TIERS.map(t=>`<option ${state.tierF===t?'selected':''}>${t}</option>`).join('')}
-      </select>
       <select onchange="state.llmF=this.value;renderPartial()">
         <option ${state.llmF==='All'?'selected':''} value="All">All LLMs</option>
         ${LLMS.map(l=>`<option ${state.llmF===l?'selected':''}>${l}</option>`).join('')}
@@ -1063,20 +1085,27 @@ function buyWithCredits(id){
   toast(`✅ ${s.name} licensed — ⬡${s.credits} credits used. Balance: ⬡${state.credits}.`);
   render();
 }
-function rentAvatar(id){
+function rentAvatar(id){ // personal-use pack (⬡ credits)
   const s = SKILLS.find(x=>x.id===id);
-  if(!state.subActive){ toast('⚠️ Reactivate your subscription to rent avatars.'); return; }
-  if(state.credits < s.rent){ toast(`Not enough credits — rental costs ⬡${s.rent}/mo, you have ⬡${state.credits}.`); return; }
-  state.credits -= s.rent; state.rented.add(id); s.downloads++;
-  toast(`✅ Renting ${s.name} — ⬡${s.rent}/mo from your credit allowance.`);
+  if(!state.subActive){ toast('⚠️ Reactivate your subscription first.'); return; }
+  const cost = s.credits ?? 60;
+  if(state.credits < cost){ toast(`Not enough credits — personal license costs ⬡${cost}, you have ⬡${state.credits}.`); return; }
+  state.credits -= cost; state.downloaded.add(id); s.downloads++;
+  toast(`✅ ${s.name} — personal-use license issued for ⬡${cost}.`);
   render();
 }
-function buyoutAvatar(id){
+function buyoutAvatar(id){ // commercial license (seller-priced $)
   const s = SKILLS.find(x=>x.id===id);
-  if(!state.subActive){ toast('⚠️ Reactivate your subscription to purchase.'); return; }
-  if(state.credits < s.buyout){ toast(`Buyout costs ⬡${s.buyout} — you have ⬡${state.credits}. Top up credits in Billing.`); return; }
-  state.credits -= s.buyout; state.rented.delete(id); state.ownedForever.add(id); s.downloads++;
-  toast(`🎉 ${s.name} is exclusively yours — perpetual license, delisted for everyone else.`);
+  if(!state.subActive){ toast('⚠️ Reactivate your subscription first.'); return; }
+  state.ownedForever.add(id); s.downloads++;
+  toast(`🎉 Commercial license for ${s.name} — ${usdStr(s.priceUsd||0)} charged (demo). Perpetual, survives cancellation.`);
+  render();
+}
+function buyUsd(id){ // seller-priced items: models, large datasets, rag/eval/asset packs
+  const s = SKILLS.find(x=>x.id===id);
+  if(!state.subActive){ toast('⚠️ Reactivate your subscription first.'); return; }
+  state.ownedForever.add(id); s.downloads++;
+  toast(`🎉 ${s.name} purchased — ${usdStr(s.priceUsd||0)} charged (demo). Perpetual license issued.`);
   render();
 }
 function requestRescan(id){
@@ -1102,26 +1131,26 @@ function renderSkill(){
   const tab = state.detailTab;
 
   let dlBtn;
-  if(RENTAL_TYPES.includes(s.type)){
-    const isOwned = state.ownedForever.has(s.id), isRented = state.rented.has(s.id);
-    if(isOwned) dlBtn = `<button class="btn btn-ghost" style="width:100%" disabled>✓ Owned — exclusive, perpetual</button>`;
-    else if(isRented && state.subActive) dlBtn = `<button class="btn btn-ghost" style="width:100%" disabled>✓ Renting · ⬡${s.rent}/mo</button>
-      <button class="btn btn-primary" style="width:100%" onclick="buyoutAvatar('${s.id}')">★ Buy out · ⬡${s.buyout} (exclusive)</button>`;
-    else if(isRented && !state.subActive) dlBtn = `<button class="btn btn-danger" style="width:100%" onclick="go('billing')">⚠ Rental deactivated — reactivate</button>`;
-    else dlBtn = `<button class="btn btn-primary" style="width:100%" onclick="rentAvatar('${s.id}')">Rent · ⬡${s.rent}/month</button>
-      <button class="btn btn-ghost" style="width:100%" onclick="buyoutAvatar('${s.id}')">★ Buy out · ⬡${s.buyout} (exclusive)</button>`;
-  }
-  else if(CREDIT_TYPES.includes(s.type)){
-    if(owned && state.subActive) dlBtn = `<button class="btn btn-ghost" style="width:100%" disabled>✓ Licensed to you</button>`;
-    else if(owned && !state.subActive) dlBtn = `<button class="btn btn-danger" style="width:100%" onclick="go('billing')">⚠ License deactivated — reactivate</button>`;
-    else dlBtn = `<button class="btn btn-primary" style="width:100%" onclick="buyWithCredits('${s.id}')">⬡ Get for ${s.credits} credits</button>
+  const isOwnedForever = state.ownedForever.has(s.id);
+  if(isOwnedForever) dlBtn = `<button class="btn btn-ghost" style="width:100%" disabled>✓ Owned — perpetual license</button>`;
+  else if(owned && !state.subActive) dlBtn = `<button class="btn btn-danger" style="width:100%" onclick="go('billing')">⚠ License deactivated — reactivate</button>`;
+  else if(owned) dlBtn = `<button class="btn btn-ghost" style="width:100%" disabled>✓ Licensed to you</button>`;
+  else if(!allowed) dlBtn = `<button class="btn btn-ghost" style="width:100%" onclick="go('pricing')">🔒 Requires the ${TYPE_MIN_PLAN[s.type||'skill']} plan — upgrade</button>`;
+  else if(RENTAL_TYPES.includes(s.type)){
+    dlBtn = `<button class="btn btn-primary" style="width:100%" onclick="rentAvatar('${s.id}')">Personal use · ⬡ ${s.credits ?? 60}</button>
+      ${s.priceUsd ? `<button class="btn btn-ghost" style="width:100%" onclick="buyoutAvatar('${s.id}')">★ Commercial license · ${usdStr(s.priceUsd)}</button>` : ''}
       <div style="font-size:12px;color:var(--faint);text-align:center">Your balance: ⬡ ${state.credits}</div>`;
   }
+  else if(s.credits != null && s.credits > 0){
+    dlBtn = `<button class="btn btn-primary" style="width:100%" onclick="buyWithCredits('${s.id}')">⬡ Get for ${s.credits} credits</button>
+      <div style="font-size:12px;color:var(--faint);text-align:center">Your balance: ⬡ ${state.credits}</div>`;
+  }
+  else if(s.priceUsd){
+    dlBtn = `<button class="btn btn-primary" style="width:100%" onclick="buyUsd('${s.id}')">Buy · ${usdStr(s.priceUsd)} — perpetual license</button>
+      <div style="font-size:12px;color:var(--faint);text-align:center">Seller-priced · platform fee included</div>`;
+  }
   else {
-    if(owned && state.subActive) dlBtn = `<button class="btn btn-ghost" style="width:100%" disabled>✓ Licensed to you</button>`;
-    else if(owned && !state.subActive) dlBtn = `<button class="btn btn-danger" style="width:100%" onclick="go('billing')">⚠ License deactivated — reactivate</button>`;
-    else if(allowed) dlBtn = `<button class="btn btn-primary" style="width:100%" onclick="downloadSkill('${s.id}')">⬇ Download ${TYPE_META[s.type].label.toLowerCase()}</button>`;
-    else dlBtn = `<button class="btn btn-ghost" style="width:100%" onclick="go('pricing')">🔒 Requires ${s.tier} — upgrade</button>`;
+    dlBtn = `<button class="btn btn-primary" style="width:100%" onclick="downloadSkill('${s.id}')">⬇ Get ${TYPE_META[s.type].label.toLowerCase()} — free</button>`;
   }
 
   const tabContent = {
@@ -1259,7 +1288,7 @@ function renderPricing(){
   <div class="page" style="max-width:1080px">
     <div style="text-align:center">
       <h1 style="font-size:34px;font-weight:800;letter-spacing:-.03em">Simple pricing. Serious powerups.</h1>
-      <p style="color:var(--muted);margin-top:8px">Every plan includes security-scanned skills and designer revenue sharing.</p>
+      <p style="color:var(--muted);margin-top:8px">Every plan includes monthly credits and security-scanned products. Sellers keep 67% of every sale.</p>
       <div class="pricing-toggle">
         <span style="color:${state.annual?'var(--muted)':'var(--text)'}">Monthly</span>
         <div class="switch ${state.annual?'on':''}" role="switch" tabindex="0" aria-checked="${state.annual}" aria-label="Annual billing" onclick="state.annual=!state.annual;render()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}"><div class="knob"></div></div>
@@ -1267,7 +1296,7 @@ function renderPricing(){
         <span class="save-tag">Save 20%</span>
       </div>
     </div>
-    <div class="grid grid-4" style="align-items:stretch">
+    <div class="grid grid-3" style="align-items:stretch">
       ${PLANS.map(p=>{
         const pr = planPrice(p);
         const current = state.plan===p.id && state.subActive;
@@ -1288,11 +1317,12 @@ function renderPricing(){
     <div class="panel" style="margin-top:34px">
       <div style="font-weight:700;margin-bottom:8px">How licensing &amp; credits work</div>
       <p style="color:var(--muted);font-size:14px;line-height:1.65">
-        Skills and prompt packs are covered by your subscription tier. Big-ticket items — datasets, models, and avatars — use
-        <b style="color:var(--text)">⬡ credits</b>, included monthly with paid plans (top-ups available). Every license validates against your subscription when loaded:
-        if it lapses, subscription items and avatar rentals are <b style="color:var(--text)">deactivated</b> until you reactivate.
-        The one exception: avatar <b style="color:var(--text)">buyouts</b> are perpetual, exclusive, and yours forever.
-        Upgrade or downgrade anytime; items above your new tier's limit are paused, never deleted.
+        Every plan includes monthly <b style="color:var(--text)">⬡ credits</b> — top-ups are $0.50/credit (packs of 20, 60 or 120).
+        Credit prices are flat: skills ⬡5, prompt packs ⬡2, workflows ⬡30, small/medium datasets ⬡15/⬡30, and avatar &amp; voice
+        <b style="color:var(--text)">personal-use packs</b> ⬡60. Seller-priced items — large datasets, models, RAG/eval/asset packs, and
+        avatar &amp; voice <b style="color:var(--text)">commercial licenses</b> — are paid in dollars and yours forever (perpetual, survive cancellation).
+        Models can be free. Credit-licensed items validate against your subscription: if it lapses they deactivate until you reactivate.
+        The platform keeps 33% of every transaction; sellers keep 67%.
       </p>
     </div>
   </div>`;
@@ -1347,11 +1377,13 @@ function renderBilling(){
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px">
         <div>
           <div style="font-weight:700">Marketplace credits</div>
-          <div style="color:var(--muted);font-size:13px;margin-top:4px">For datasets, models, avatar rentals &amp; buyouts · refills ${state.subActive&&p.credits?`⬡${p.credits} on ${state.renewal}`:'with an active paid plan'}</div>
+          <div style="color:var(--muted);font-size:13px;margin-top:4px">For skills, prompts, workflows, datasets &amp; personal-use packs · refills ${state.subActive&&p.credits?`⬡${p.credits} on ${state.renewal}`:'with an active paid plan'} · extra credits $0.50 each</div>
         </div>
-        <div style="display:flex;align-items:center;gap:16px">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
           <div style="font-size:26px;font-weight:800;color:var(--accent)">⬡ ${state.credits}</div>
-          <button class="btn btn-ghost btn-sm" onclick="topUp()">+ Top up ⬡50 · $14.99</button>
+          <button class="btn btn-ghost btn-sm" onclick="topUp(20)">+ ⬡20 · $10</button>
+          <button class="btn btn-ghost btn-sm" onclick="topUp(60)">+ ⬡60 · $30</button>
+          <button class="btn btn-ghost btn-sm" onclick="topUp(120)">+ ⬡120 · $60</button>
         </div>
       </div>
     </div>
@@ -1621,7 +1653,8 @@ function mapRow(r){
     designer:DESIGNER_BY_NAME[(r.designer_label||'').split('@')[0].trim()] || null,
     designerLabel:r.designer_label,
     llms:r.llms||[], format:r.format||undefined,
-    credits:r.credits_price??undefined, rent:r.rent_price??undefined, buyout:r.buyout_price??undefined,
+    credits:r.credits_price??null, priceUsd:r.price_usd_cents??null, sizeTier:r.size_tier??undefined,
+    rent:r.rent_price??undefined, buyout:r.buyout_price??undefined,
     score:r.score, upvotes:r.upvotes, downloads:r.downloads, rating:Number(r.rating),
     featured:r.featured, trendRank:r.trend_rank||999,
     updated:(r.updated_at||'').slice(0,10), sizeKb:SEED_SIZE[r.id] ?? 0,
@@ -1712,8 +1745,11 @@ function requireAuth(){
 async function acquireLive(id, mode){
   if(!requireAuth()) return;
   toast('Processing…');
-  const {data, error} = await sb.functions.invoke('acquire', {body:{product_id:id, mode}});
+  const {data, error} = await sb.functions.invoke('acquire', {body:{product_id:id, mode,
+    success_url: location.origin + location.pathname + '?purchase=success',
+    cancel_url: location.origin + location.pathname}});
   if(error || data?.error){ toast('⚠️ ' + (data?.error || error.message)); return; }
+  if(data?.checkout && data.url){ window.location.href = data.url; return; }  // seller-priced ($) → Stripe Checkout
   // deliver the watermarked artifact as a real download (any format)
   if(data.artifact){
     let blob;
@@ -1733,24 +1769,25 @@ async function acquireLive(id, mode){
   const meth = data.artifact?.watermark_method ? ` · ${data.artifact.format} watermarked (${data.artifact.watermark_method})` : '';
   toast(`✅ Licensed — key ${data.license_key.slice(0,16)}…${meth}`);
 }
-async function billingAction(action, plan, annual){
+async function billingAction(action, plan, annual, pack){
   if(!requireAuth()) return;
   toast('Processing…');
-  const {data, error} = await sb.functions.invoke('stripe-checkout', {body:{action, plan, annual}});
+  const {data, error} = await sb.functions.invoke('stripe-checkout', {body:{action, plan, annual, pack}});
   if(error || data?.error){ toast('⚠️ ' + (data?.error || error.message)); return; }
   if(data.url){ window.location.href = data.url; return; }   // real Stripe checkout
   await loadAccount(); render();
   toast(data.message || '✅ Done' + (data.demo ? ' (demo billing — Stripe keys pending)' : ''));
 }
-const _demo = {downloadSkill, buyWithCredits, rentAvatar, buyoutAvatar, choosePlan, cancelSub, reactivate, topUp, toggleUpvote};
-downloadSkill  = id => window.LIVE ? acquireLive(id,'download')  : _demo.downloadSkill(id);
-buyWithCredits = id => window.LIVE ? acquireLive(id,'purchase')  : _demo.buyWithCredits(id);
-rentAvatar     = id => window.LIVE ? acquireLive(id,'rent')      : _demo.rentAvatar(id);
-buyoutAvatar   = id => window.LIVE ? acquireLive(id,'buyout')    : _demo.buyoutAvatar(id);
+const _demo = {downloadSkill, buyWithCredits, rentAvatar, buyoutAvatar, buyUsd, choosePlan, cancelSub, reactivate, topUp, toggleUpvote};
+downloadSkill  = id => window.LIVE ? acquireLive(id,'download')   : _demo.downloadSkill(id);
+buyWithCredits = id => window.LIVE ? acquireLive(id,'purchase')   : _demo.buyWithCredits(id);
+rentAvatar     = id => window.LIVE ? acquireLive(id,'personal')   : _demo.rentAvatar(id);
+buyoutAvatar   = id => window.LIVE ? acquireLive(id,'commercial') : _demo.buyoutAvatar(id);
+buyUsd         = id => window.LIVE ? acquireLive(id,'purchase')   : _demo.buyUsd(id);
 choosePlan     = id => window.LIVE ? billingAction('subscribe', id, state.annual) : _demo.choosePlan(id);
 cancelSub      = () => window.LIVE ? billingAction('cancel')     : _demo.cancelSub();
 reactivate     = () => window.LIVE ? billingAction('reactivate') : _demo.reactivate();
-topUp          = () => window.LIVE ? billingAction('topup')      : _demo.topUp();
+topUp          = (pack) => window.LIVE ? billingAction('topup', null, null, pack) : _demo.topUp(pack);
 toggleUpvote   = async (e,id) => {
   if(!window.LIVE) return _demo.toggleUpvote(e,id);
   e.stopPropagation();
