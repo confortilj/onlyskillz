@@ -10,7 +10,16 @@ const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").repla
 const rand = (n: number) => { const a = new Uint8Array(n); crypto.getRandomValues(a); return [...a].map((b) => "abcdefghjkmnpqrstuvwxyz23456789"[b % 31]).join(""); };
 const SUMMARY: Record<string, string> = { critical: "fail", high: "fail", medium: "warn", low: "warn" };
 
-const MAX_BYTES = 10 * 1024 * 1024; // 10 MB MVP cap
+// ---- per-type size policy (researched high-end limits; see PRODUCT-TYPES.md) ----
+const MB = 1024 * 1024, GB = 1024 * MB;
+const INLINE_MAX = 10 * MB; // base64-through-JSON transport ceiling; larger files use init_upload + signed URL
+const TYPE_LIMITS: Record<string, number> = {
+  skill: 25 * MB, prompt: 25 * MB, workflow: 25 * MB, eval: 500 * MB,
+  model: 20 * GB, voice: 5 * GB, avatar: 20 * GB, assets: 10 * GB, rag: 10 * GB, dataset: 50 * GB,
+};
+const DATASET_TIER_LIMITS: Record<string, number> = { small: 100 * MB, medium: 1 * GB, large: 10 * GB, xl: 50 * GB };
+const limitFor = (type: string, tier?: string | null) => type === "dataset" ? (DATASET_TIER_LIMITS[tier ?? ""] ?? 100 * MB) : (TYPE_LIMITS[type] ?? 25 * MB);
+const fmtBytes = (n: number) => n >= GB ? `${(n / GB).toFixed(n % GB ? 1 : 0)} GB` : `${Math.round(n / MB)} MB`;
 const TEXT_EXTS = ["md", "csv", "jsonl", "svg", "txt"];
 const FILE_RULES: Record<string, string[]> = {
   skill: ["md", "zip"], prompt: ["md", "zip"], workflow: ["md", "zip"],
@@ -61,29 +70,72 @@ Deno.serve(async (req: Request) => {
     const { data: { user } } = await userClient.auth.getUser();
     if (!user) return json({ error: "Not authenticated" }, 401);
 
+    const body0 = await req.json();
+
+    // ---- phase A: init_upload — validate + hand back a signed direct-to-storage upload URL ----
+    if (body0.action === "init_upload") {
+      const { type: t = "skill", size_tier: st = null, file_name, file_size } = body0;
+      if (t === "mcp") return json({ error: "MCP connectors are no longer accepted on the marketplace" }, 400);
+      const ext = String(file_name ?? "").split(".").pop()!.toLowerCase();
+      const allowed = FILE_RULES[t] ?? [];
+      if (!allowed.includes(ext)) return json({ error: `Invalid file type ".${ext}" for a ${t} — accepted: ${allowed.map((e) => "." + e).join(", ")}` }, 400);
+      const cap = limitFor(t, st);
+      if (!Number.isFinite(file_size) || file_size <= 0) return json({ error: "file_size (bytes) required" }, 400);
+      if (file_size > cap) return json({ error: `File too large for a ${t}${t === "dataset" ? ` (${st ?? "small"} tier)` : ""}: ${fmtBytes(file_size)} — the limit is ${fmtBytes(cap)}` }, 413);
+      const path = `uploads/${user.id}/${crypto.randomUUID()}.${ext}`;
+      const { data: signed, error: sErr } = await admin.storage.from("bundles").createSignedUploadUrl(path);
+      if (sErr) return json({ error: `Could not create upload URL: ${sErr.message}` }, 500);
+      return json({ ok: true, upload_path: path, token: signed.token, cap_bytes: cap });
+    }
+
     // ---- rate limit: max 5 submissions per hour ----
     const hourAgo = new Date(Date.now() - 3600e3).toISOString();
     const { count: recent } = await admin.from("scan_reports").select("id", { count: "exact", head: true }).eq("submitted_by", user.id).gte("created_at", hourAgo);
     if ((recent ?? 0) >= 5) return json({ error: "Rate limit: max 5 submissions per hour. Try again later." }, 429);
 
-    const body = await req.json();
+    const body = body0;
     const { name, type = "skill", category = "Productivity", version = "1.0.0", description = "", docs_markdown = "", llms = [], size_tier = null, price_usd_cents = null, file = null } = body;
     if (!name) return json({ error: "name required" }, 400);
     if (type === "mcp") return json({ error: "MCP connectors are no longer accepted on the marketplace" }, 400);
     const pricing = resolvePricing(type, size_tier, price_usd_cents);
     if (pricing.error) return json({ error: pricing.error }, 400);
 
-    // ---- optional real product file: validate extension, size, magic bytes ----
-    let fileBytes: Uint8Array | null = null; let fileExt = ""; let fileName = "";
+    // ---- optional real product file: inline base64 (≤10 MB) or pre-uploaded via init_upload ----
+    let fileBytes: Uint8Array | null = null; let fileExt = ""; let fileName = ""; let uploadedPath: string | null = null;
+    const typeCap = limitFor(type, pricing.size_tier);
     if (file?.base64 && file?.name) {
       fileExt = String(file.name).split(".").pop()!.toLowerCase();
       const allowed = FILE_RULES[type] ?? [];
       if (!allowed.includes(fileExt)) return json({ error: `Invalid file type ".${fileExt}" for a ${type} — accepted: ${allowed.map((e) => "." + e).join(", ")}` }, 400);
       try { fileBytes = b64ToBytes(file.base64); } catch { return json({ error: "file.base64 is not valid base64" }, 400); }
-      if (fileBytes.length > MAX_BYTES) return json({ error: `File too large: ${(fileBytes.length / 1048576).toFixed(1)} MB (max 10 MB)` }, 413);
+      if (fileBytes.length > Math.min(INLINE_MAX, typeCap)) return json({ error: `File too large for inline upload: ${fmtBytes(fileBytes.length)} — files over ${fmtBytes(Math.min(INLINE_MAX, typeCap))} must use the large-file upload (limit for ${type}s: ${fmtBytes(typeCap)})` }, 413);
       if (fileBytes.length < 8) return json({ error: "File is empty or truncated" }, 400);
       if (!magicOk(fileExt, fileBytes)) return json({ error: `File contents do not match .${fileExt} format` }, 400);
       if (TEXT_EXTS.includes(fileExt)) { try { new TextDecoder("utf-8", { fatal: true }).decode(fileBytes); } catch { return json({ error: `.${fileExt} file is not valid UTF-8 text` }, 400); } }
+      fileName = `product-${rand(4)}.${fileExt}`;
+    } else if (file?.path && file?.name) {
+      // pre-uploaded through init_upload: verify ownership prefix, existence, size and magic bytes (range read)
+      if (!String(file.path).startsWith(`uploads/${user.id}/`)) return json({ error: "upload path does not belong to you" }, 403);
+      fileExt = String(file.name).split(".").pop()!.toLowerCase();
+      const allowed = FILE_RULES[type] ?? [];
+      if (!allowed.includes(fileExt)) return json({ error: `Invalid file type ".${fileExt}" for a ${type} — accepted: ${allowed.map((e) => "." + e).join(", ")}` }, 400);
+      const dir = String(file.path).split("/").slice(0, -1).join("/"); const base = String(file.path).split("/").pop()!;
+      const { data: objs } = await admin.storage.from("bundles").list(dir, { search: base });
+      const obj = (objs ?? []).find((o) => o.name === base);
+      if (!obj) return json({ error: "Uploaded file not found — the upload may have failed; try again" }, 400);
+      const objSize = (obj as any).metadata?.size ?? 0;
+      if (objSize > typeCap) return json({ error: `File too large for a ${type}${type === "dataset" ? ` (${pricing.size_tier} tier)` : ""}: ${fmtBytes(objSize)} — the limit is ${fmtBytes(typeCap)}` }, 413);
+      if (objSize < 8) return json({ error: "Uploaded file is empty" }, 400);
+      try { // magic-byte check on the first KB via a ranged read
+        const { data: su } = await admin.storage.from("bundles").createSignedUrl(file.path, 60);
+        if (su?.signedUrl) {
+          const head = await fetch(su.signedUrl, { headers: { Range: "bytes=0-1023" } });
+          const headBytes = new Uint8Array(await head.arrayBuffer());
+          if (fileExt !== "safetensors" && !magicOk(fileExt, headBytes)) return json({ error: `File contents do not match .${fileExt} format` }, 400);
+          if (fileExt === "safetensors") { const dv = new DataView(headBytes.buffer); const len = Number(dv.getBigUint64(0, true)); if (!(len > 0 && len < objSize && headBytes[8] === 0x7b)) return json({ error: "File contents do not match .safetensors format" }, 400); }
+        }
+      } catch (_) { /* magic check best-effort for large files */ }
+      uploadedPath = String(file.path);
       fileName = `product-${rand(4)}.${fileExt}`;
     }
 
@@ -115,6 +167,10 @@ Deno.serve(async (req: Request) => {
       const { error: upErr } = await admin.storage.from("bundles").upload(`${id}/${fileName}`, new Blob([fileBytes]), { upsert: true, contentType: "application/octet-stream" });
       if (upErr) return json({ error: `Storage upload failed: ${upErr.message}` }, 500);
       bundlePath = `${id}/${fileName}`;
+    } else if (uploadedPath) {
+      const { error: mvErr } = await admin.storage.from("bundles").move(uploadedPath, `${id}/${fileName}`);
+      if (mvErr) return json({ error: `Could not attach uploaded file: ${mvErr.message}` }, 500);
+      bundlePath = `${id}/${fileName}`;
     }
 
     const { error: insErr } = await admin.from("products").insert({
@@ -132,6 +188,6 @@ Deno.serve(async (req: Request) => {
     const msg = scan.verdict === "published" ? `Published — score ${scan.score}/100${scan.score >= 90 ? " · Verified Safe badge" : ""}. Dynamic sandbox scan queued.`
       : scan.verdict === "needs_review" ? `Score ${scan.score}/100 — flagged for manual review before publishing (sensitive findings present).`
       : `Score ${scan.score}/100 — BLOCKED. Critical issues must be resolved before resubmitting.`;
-    return json({ ok: true, product_id: id, published, verdict: scan.verdict, has_file: !!fileBytes, pricing, scan: { score: scan.score, verdict: scan.verdict, findings: scan.findings, checks: summaryChecks }, message: msg });
+    return json({ ok: true, product_id: id, published, verdict: scan.verdict, has_file: !!(fileBytes || uploadedPath), pricing, scan: { score: scan.score, verdict: scan.verdict, findings: scan.findings, checks: summaryChecks }, message: msg });
   } catch (e) { return json({ error: String(e) }, 500); }
 });

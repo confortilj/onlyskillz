@@ -1598,24 +1598,26 @@ function renderDashboard(){
 }
 
 /* ================= UPLOAD ================= */
-const UPLOAD_META = { // per-type: accepted files + pricing behavior
-  skill:   {accept:'.md,.zip',            price:'auto',    info:'Skills are auto-priced at ⬡ 5 per license — you keep 67% of every sale.'},
-  prompt:  {accept:'.md,.zip',            price:'auto',    info:'Prompt packs are auto-priced at ⬡ 2 per license — you keep 67%.'},
-  workflow:{accept:'.md,.zip',            price:'auto',    info:'Workflows are auto-priced at ⬡ 30 per license — you keep 67%.'},
-  dataset: {accept:'.csv,.jsonl,.zip',    price:'tiered',  info:'Pick a size tier: small ⬡15 / medium ⬡30 (auto) — large & XL are priced by you in dollars.'},
-  avatar:  {accept:'.mp4,.zip',           price:'commercial', info:'Personal-use pack is ⬡ 60 (auto). Optionally set a commercial-license price in dollars (perpetual).'},
-  voice:   {accept:'.wav,.mp3',           price:'commercial', info:'Personal-use pack is ⬡ 60 (auto). Optionally set a commercial-license price in dollars (perpetual).'},
-  model:   {accept:'.safetensors,.gguf',  price:'usd',     info:'You set the price in dollars — 0 makes it free. Buyers get a perpetual license; you keep 67%.'},
-  rag:     {accept:'.csv,.jsonl,.zip',    price:'usd',     info:'You set the price in dollars — buyers get a perpetual license; you keep 67%.'},
-  eval:    {accept:'.md,.jsonl,.zip',     price:'usd',     info:'You set the price in dollars — buyers get a perpetual license; you keep 67%.'},
-  assets:  {accept:'.zip,.svg',           price:'usd',     info:'You set the price in dollars — buyers get a perpetual license; you keep 67%.'},
+const UPLOAD_META = { // per-type: accepted files + pricing behavior + size cap (see PRODUCT-TYPES.md)
+  skill:   {accept:'.md,.zip',            price:'auto',    cap:'25 MB',  info:'Skills are auto-priced at ⬡ 5 per license — you keep 67% of every sale.'},
+  prompt:  {accept:'.md,.zip',            price:'auto',    cap:'25 MB',  info:'Prompt packs are auto-priced at ⬡ 2 per license — you keep 67%.'},
+  workflow:{accept:'.md,.zip',            price:'auto',    cap:'25 MB',  info:'Workflows are auto-priced at ⬡ 30 per license — you keep 67%.'},
+  dataset: {accept:'.csv,.jsonl,.zip',    price:'tiered',  cap:'by tier', info:'Pick a size tier: small ⬡15 / medium ⬡30 (auto) — large & XL are priced by you in dollars.'},
+  avatar:  {accept:'.mp4,.zip',           price:'commercial', cap:'20 GB', info:'Personal-use pack is ⬡ 60 (auto). Optionally set a commercial-license price in dollars (perpetual).'},
+  voice:   {accept:'.wav,.mp3',           price:'commercial', cap:'5 GB',  info:'Personal-use pack is ⬡ 60 (auto). Optionally set a commercial-license price in dollars (perpetual).'},
+  model:   {accept:'.safetensors,.gguf',  price:'usd',     cap:'20 GB',  info:'You set the price in dollars — 0 makes it free. Buyers get a perpetual license; you keep 67%.'},
+  rag:     {accept:'.csv,.jsonl,.zip',    price:'usd',     cap:'10 GB',  info:'You set the price in dollars — buyers get a perpetual license; you keep 67%.'},
+  eval:    {accept:'.md,.jsonl,.zip',     price:'usd',     cap:'500 MB', info:'You set the price in dollars — buyers get a perpetual license; you keep 67%.'},
+  assets:  {accept:'.zip,.svg',           price:'usd',     cap:'10 GB',  info:'You set the price in dollars — buyers get a perpetual license; you keep 67%.'},
 };
+const DATASET_TIER_CAPS = {small:'100 MB', medium:'1 GB', large:'10 GB', xl:'50 GB'};
 function updateUploadPricing(){
   const t = TYPE_FROM_LABEL[$('upType')?.value] || 'skill';
   const m = UPLOAD_META[t];
   const sizeSel = $('upSizeTier'), price = $('upPrice'), info = $('upPriceInfo'), file = $('upFile'), hint = $('upFileHint');
   if(file) file.accept = m.accept;
-  if(hint) hint.textContent = `Accepted for ${t}s: ${m.accept.split(',').join(', ')} · max 10 MB. This exact file is what buyers download — individually watermarked per buyer.`;
+  const cap = t === 'dataset' ? (DATASET_TIER_CAPS[sizeSel?.value || 'small'] || '100 MB') : m.cap;
+  if(hint) hint.textContent = `Accepted for ${t}s: ${m.accept.split(',').join(', ')} · max ${cap}. This exact file is what buyers download — watermarked or fingerprint-registered per buyer. Files over 10 MB upload directly to secure storage.`;
   if(info) info.textContent = m.info;
   if(sizeSel) sizeSel.style.display = m.price === 'tiered' ? '' : 'none';
   const tier = sizeSel?.value || 'small';
@@ -1902,6 +1904,12 @@ async function acquireLive(id, mode){
     cancel_url: location.origin + location.pathname}});
   if(error || data?.error){ toast('⚠️ ' + (data?.error || error.message)); return; }
   if(data?.checkout && data.url){ window.location.href = data.url; return; }  // seller-priced ($) → Stripe Checkout
+  if(data?.artifact?.url){ // large binary: short-lived signed download URL (fingerprint-registered server-side)
+    const a = document.createElement('a'); a.href = data.artifact.url; a.download = data.artifact.filename || ''; a.click();
+    await loadAccount(); render();
+    toast(`✅ Licensed — key ${data.license_key.slice(0,16)}… · download started (${(data.artifact.format||'file').toUpperCase()}, fingerprint-registered)`);
+    return;
+  }
   // deliver the watermarked artifact as a real download (any format)
   if(data.artifact){
     let blob;
@@ -1973,15 +1981,27 @@ startScan = async function(){
   const priceCents = priceStr !== '' ? Math.round(parseFloat(priceStr) * 100) : null;
   let filePayload = null;
   const f = $('upFile')?.files?.[0];
-  if(f){
-    if(f.size > 10 * 1024 * 1024){ toast('⚠️ File too large — max 10 MB at MVP.'); return; }
+  if(f && f.size <= 10 * 1024 * 1024){
+    // small file: inline base64 through the submit call
     try{
       const b64 = await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(',')[1]); r.onerror = rej; r.readAsDataURL(f); });
       filePayload = { name: f.name, base64: b64 };
     }catch(_){ toast('⚠️ Could not read the file.'); return; }
+  } else if(f){
+    // large file: two-phase — init_upload validates against the per-type cap, then direct-to-storage upload
+    state.pendingName = name;
+    state.scanState = {pct:5, log:[`Requesting secure upload slot for ${f.name} (${(f.size/1048576).toFixed(1)} MB)…`]};
+    render();
+    const {data: init, error: initErr} = await sb.functions.invoke('submit-product', {body:{action:'init_upload', type, size_tier: sizeTier, file_name: f.name, file_size: f.size}});
+    if(initErr || init?.error){ state.scanState = null; render(); toast('⚠️ ' + (init?.error || initErr.message)); return; }
+    state.scanState = {pct:10, log:[`Uploading ${f.name} directly to secure storage…`, 'Large uploads can take a while — keep this tab open.']};
+    render();
+    const {error: upErr} = await sb.storage.from('bundles').uploadToSignedUrl(init.upload_path, init.token, f);
+    if(upErr){ state.scanState = null; render(); toast('⚠️ Upload failed: ' + upErr.message + (f.size > 52428800 ? ' — note: files over 50 MB need the storage plan upgrade (Dashboard → Storage → upload limit).' : '')); return; }
+    filePayload = { name: f.name, path: init.upload_path };
   }
   state.pendingName = name;
-  state.scanState = {pct:15, log:[filePayload ? `Uploading ${f.name} (${(f.size/1024).toFixed(0)} KB)…` : 'Uploading bundle to skillz.ai…','Running automated security scan…']};
+  state.scanState = {pct:15, log:[filePayload ? `Attached ${f.name} (${(f.size/1048576).toFixed(1)} MB)` : 'Uploading bundle to skillz.ai…','Running automated security scan…']};
   render();
   const {data, error} = await sb.functions.invoke('submit-product', {body:{
     name, version: v('upVer') || '1.0.0', description: v('upDesc'),

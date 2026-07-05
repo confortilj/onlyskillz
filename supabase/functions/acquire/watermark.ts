@@ -2,7 +2,7 @@
 // NOTE: \u2060 \u200B \u200C are placeholders for U+2060 / U+200B / U+200C, substituted at build.
 const enc = new TextEncoder(); const dec = new TextDecoder();
 const toBits = (s: string) => [...enc.encode(s)].map((b) => b.toString(2).padStart(8, "0")).join("");
-export type WmResult = { bytes: Uint8Array; filename: string; mime: string; method: string; format: string; canary?: { signature: string; positions: number[] } };
+export type WmResult = { bytes: Uint8Array | null; filename: string; mime: string; method: string; format: string; url?: string; canary?: { signature: string; positions: number[] } };
 
 export function wmText(text: string, code: string): string {
   const mark = "\u2060" + [...toBits(code)].map((b) => (b === "0" ? "\u200B" : "\u200C")).join("") + "\u2060";

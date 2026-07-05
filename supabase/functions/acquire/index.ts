@@ -103,14 +103,22 @@ Deno.serve(async (req: Request) => {
     // deliver the seller's real uploaded file when one exists; fall back to the generated docs bundle
     let art = null as any;
     if (product.bundle_path && !product.bundle_path.endsWith("/SKILL.md")) {
-      const { data: blob, error: dlErr } = await admin.storage.from("bundles").download(product.bundle_path);
-      if (!dlErr && blob) {
-        const bytes = new Uint8Array(await blob.arrayBuffer());
-        art = watermarkRealFile(bytes, product.bundle_path.split(".").pop()!.toLowerCase(), product.id, fpCode);
+      const ext = product.bundle_path.split(".").pop()!.toLowerCase();
+      const TEXTY = ["md", "txt", "csv", "jsonl", "svg"];
+      if (!TEXTY.includes(ext)) {
+        // binary formats aren't modified per-buyer — deliver via short-lived signed URL (no function memory/size limits)
+        const { data: su } = await admin.storage.from("bundles").createSignedUrl(product.bundle_path, 600, { download: `${product.id}.${ext}` });
+        if (su?.signedUrl) art = { url: su.signedUrl, bytes: null, filename: `${product.id}.${ext}`, mime: "application/octet-stream", method: "registry-fingerprint", format: ext };
+      } else {
+        const { data: blob, error: dlErr } = await admin.storage.from("bundles").download(product.bundle_path);
+        if (!dlErr && blob) {
+          const bytes = new Uint8Array(await blob.arrayBuffer());
+          art = watermarkRealFile(bytes, ext, product.id, fpCode);
+        }
       }
     }
     if (!art) art = buildArtifact(product, fpCode, docText);
-    const artifactSha = await sha256Hex(art.bytes);
+    const artifactSha = art.bytes ? await sha256Hex(art.bytes) : null;
     const { data: fp } = await admin.from("fingerprints").insert({ fingerprint_code: fpCode, user_id: user.id, product_id, license_id: license!.id, artifact_sha256: artifactSha, ip_address: req.headers.get("x-forwarded-for")?.split(",")[0] ?? null, user_agent: req.headers.get("user-agent") ?? null, method: art.method, artifact_format: art.format }).select().single();
     if (art.canary && fp) await admin.from("canaries").insert({ fingerprint_code: fpCode, product_id, user_id: user.id, canary_signature: art.canary.signature, row_positions: art.canary.positions });
     await admin.from("download_events").insert({ user_id: user.id, product_id, fingerprint_id: fp?.id ?? null });
@@ -118,7 +126,9 @@ Deno.serve(async (req: Request) => {
     if (newlyIssued) { try { await admin.functions.invoke("send-email", { body: { internal_key: Deno.env.get("INTERNAL_KEY") ?? "internal", user_id: user.id, template: "receipt", data: { product: product.name, license: license!.license_key, kind: license!.kind, watermark: art.method } } }); } catch (_) { /* non-blocking */ } }
 
     return json({ ok: true, license_key: license!.license_key, kind: license!.kind, status: license!.status,
-      artifact: { filename: art.filename, mime: art.mime, base64: b64(art.bytes), sha256: artifactSha, watermark_method: art.method, format: art.format },
+      artifact: art.url
+        ? { url: art.url, filename: art.filename, mime: art.mime, watermark_method: art.method, format: art.format }
+        : { filename: art.filename, mime: art.mime, base64: b64(art.bytes), sha256: artifactSha, watermark_method: art.method, format: art.format },
       notice: `This ${art.format.toUpperCase()} artifact is forensically fingerprinted to your account via ${art.method}.` });
   } catch (e) { return json({ error: String(e) }, 500); }
 });
