@@ -25,7 +25,8 @@ Deno.serve(async (req: Request) => {
       const queue = (reports ?? []).map((r) => ({ ...r, product: pmap.get(r.product_id) ?? null }));
       const { data: takedowns } = await admin.from("takedowns").select("*").order("created_at", { ascending: false }).limit(20);
       const { data: recentSales } = await admin.from("usd_sales").select("id, product_id, user_id, amount_cents, refunded_at, stripe_payment_intent, created_at").order("created_at", { ascending: false }).limit(20);
-      return json({ ok: true, queue, takedowns: takedowns ?? [], recent_sales: recentSales ?? [] });
+      const { data: userReports } = await admin.from("product_reports").select("id, product_id, reason, created_at").order("created_at", { ascending: false }).limit(20);
+      return json({ ok: true, queue, takedowns: takedowns ?? [], recent_sales: recentSales ?? [], reports: userReports ?? [] });
     }
 
     if (action === "approve" || action === "unpublish") {

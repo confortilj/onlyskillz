@@ -32,6 +32,14 @@ Deno.serve(async (req: Request) => {
         await admin.from("products").update({ price_usd_cents: cents }).eq("id", prod.id);
         return json({ ok: true, product_id: prod.id, price_usd_cents: cents });
       }
+      if (body.action === "update_meta") {
+        const patch: Record<string, string> = {};
+        if (typeof body.description === "string" && body.description.trim()) patch.description = body.description.trim().slice(0, 500);
+        if (typeof body.version === "string" && body.version.trim()) patch.version = body.version.trim().slice(0, 20);
+        if (!Object.keys(patch).length) return json({ error: "nothing to update — send description and/or version" }, 400);
+        await admin.from("products").update(patch).eq("id", prod.id);
+        return json({ ok: true, product_id: prod.id, updated: Object.keys(patch) });
+      }
       if (body.action === "unpublish") { await admin.from("products").update({ published: false }).eq("id", prod.id); return json({ ok: true, published: false }); }
       if (body.action === "republish") { await admin.from("products").update({ published: true }).eq("id", prod.id); return json({ ok: true, published: true }); }
       return json({ error: "unknown action" }, 400);

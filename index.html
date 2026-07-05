@@ -838,6 +838,7 @@ let state = {
   scanState: null, // null | {pct, log[]}
   uploadLLMs: new Set(['ChatGPT','Claude']),
   studio: null,      // live seller dashboard payload (studio-stats)
+  library: null,     // live buyer licenses
   docCache: {},      // fetched guide HTML fragments
   reviews: {},       // product_id -> review rows
 };
@@ -899,13 +900,14 @@ function toggleUpvote(e, id){
   else { state.upvoted.add(id); SKILLS.find(s=>s.id===id).upvotes++; }
   render();
 }
-const AUTH_ROUTES = ['billing','dashboard','upload','admin'];
+const AUTH_ROUTES = ['billing','dashboard','upload','admin','library'];
 function go(route, arg){
   // In live mode, account pages require a session — prompt sign-in instead (demo mode stays open).
   if(window.LIVE && !window.SESSION && AUTH_ROUTES.includes(route)){ authClick(); return; }
   state.route = route; state.routeArg = arg || null;
   state.detailTab = 'overview';
   if(route === 'dashboard' && typeof loadStudio === 'function') loadStudio();
+  if(route === 'library' && typeof loadLibrary === 'function') loadLibrary();
   if(route === 'skill' && typeof loadReviews === 'function') loadReviews(arg);
   window.scrollTo({top:0});
   render();
@@ -923,7 +925,7 @@ function skillCard(s){
     </div>
     <div>
       <div class="skill-name">${s.name}</div>
-      <div class="skill-by">${TYPE_META[s.type].label} by ${d.name}${s.sample ? ' <span class="badge badge-llm" style="font-size:10px;opacity:.75" title="Curated example listing">Editor’s example</span>' : ''}</div>
+      <div class="skill-by">${TYPE_META[s.type].label} by <a style="color:inherit;text-decoration:underline dotted;cursor:pointer" tabindex="0" role="link" onclick="event.stopPropagation();go('designer','${s.designer || esc(d.name)}')" onkeydown="if(event.key==='Enter'){event.stopPropagation();this.click()}">${esc(d.name)}</a>${s.sample ? ' <span class="badge badge-llm" style="font-size:10px;opacity:.75" title="Curated example listing">Editor’s example</span>' : ''}</div>
     </div>
     <div class="skill-desc">${s.desc}</div>
     <div class="llm-row">${s.format?`<span class="badge badge-llm">${s.format}</span>`:llmBadges(s.llms,3)}${priceBadge(s)}</div>
@@ -1252,7 +1254,7 @@ function renderSkill(){
               <h1 style="font-size:26px;font-weight:800;letter-spacing:-.02em">${s.name}</h1>
               ${scoreBadge(s.score, s.type)}
             </div>
-            <div style="color:var(--muted);font-size:14px;margin-top:3px">${TYPE_META[s.type].label} by <b style="color:var(--text)">${d.name}</b> ${d.handle} · v${s.version}</div>
+            <div style="color:var(--muted);font-size:14px;margin-top:3px">${TYPE_META[s.type].label} by <a style="color:var(--text);font-weight:700;cursor:pointer" tabindex="0" role="link" onclick="go('designer','${s.designer || esc(d.name)}')">${esc(d.name)}</a> ${d.handle} · v${s.version}</div>
             <div class="llm-row" style="margin-top:10px">${s.format?`<span class="badge badge-llm">${s.format}</span>`:llmBadges(s.llms)}${priceBadge(s)}</div>
           </div>
         </div>
@@ -1287,7 +1289,7 @@ function renderSkill(){
     </div>
     <div class="panel" style="margin-top:26px">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px">
-        <div style="font-weight:700">Buyer reviews ${state.reviews[s.id]?.length ? `<span class="mut" style="font-weight:500">· ${state.reviews[s.id].length}</span>` : ''}</div>
+        <div style="font-weight:700">Buyer reviews ${state.reviews[s.id]?.length ? `<span class="mut" style="font-weight:500">· ${state.reviews[s.id].length}</span>` : ''} <a style="color:var(--faint);font-size:11.5px;font-weight:500;cursor:pointer;margin-left:10px" tabindex="0" role="button" onclick="reportProduct('${s.id}')">⚑ Report this product</a></div>
         ${window.LIVE && window.SESSION && (owned || isOwnedForever) ? '' : `<span class="hint">${window.LIVE ? 'Buy this product to leave a review' : 'Reviews are live-site only'}</span>`}
       </div>
       ${(state.reviews[s.id] || []).map(r => `
@@ -1504,6 +1506,7 @@ function renderStudioLive(){
           <td>${p.published?'<span class="badge badge-safe">Live</span>':'<span class="badge badge-warn">Unpublished</span>'}</td>
           <td style="white-space:nowrap">
             ${USD_PRICEABLE_TYPES.includes(p.type)?`<input id="pr_${p.id}" type="number" min="0" step="0.01" value="${p.price_usd_cents!=null?(p.price_usd_cents/100).toFixed(2):''}" placeholder="$" style="width:76px;padding:4px 6px;font-size:12px"> <button class="btn btn-ghost btn-sm" onclick="studioAction('set_price','${p.id}',$('pr_${p.id}').value)">Set $</button>`:''}
+            <button class="btn btn-ghost btn-sm" title="Edit description" onclick="editMeta('${p.id}')">✎</button>
             <button class="btn btn-ghost btn-sm" onclick="studioAction('${p.published?'unpublish':'republish'}','${p.id}')">${p.published?'Unpublish':'Republish'}</button>
           </td>
         </tr>`).join('')}
@@ -1743,16 +1746,74 @@ function renderSellerDocs(){
     <div style="margin-top:24px"><a class="see-all" tabindex="0" role="button" onclick="go('docs')">← Back to the buyer guide</a></div></div>`;
 }
 
+/* ================= LIBRARY (buyer purchases) ================= */
+function renderLibrary(){
+  const money2 = c => '$' + (c/100).toFixed(2);
+  let rows;
+  if(window.LIVE && window.SESSION){
+    if(state.library === null) return `<div class="page"><div class="empty">Loading your library…</div></div>`;
+    rows = state.library;
+  } else {
+    rows = [...state.downloaded, ...state.ownedForever].map(id => ({ product_id: id, kind: state.ownedForever.has(id) ? 'buyout' : 'credit_purchase', status: state.ownedForever.has(id) ? 'perpetual' : (state.subActive ? 'active' : 'deactivated'), license_key: 'sk-demo-XXXXXXXX', created_at: '' }));
+  }
+  return `
+  <div class="page" style="max-width:920px">
+    <h1 style="font-size:26px;font-weight:800;letter-spacing:-.02em">My library</h1>
+    <p style="color:var(--muted);margin:6px 0 24px">Everything you've licensed. Re-download any time — each download is freshly watermarked to your account.</p>
+    ${rows.length ? rows.map(l => {
+      const s = SKILLS.find(x => x.id === l.product_id);
+      const ok = l.status === 'active' || l.status === 'perpetual';
+      return `
+      <div class="panel" style="margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap">
+        <div style="min-width:200px">
+          <b>${s ? `${s.icon} ${esc(s.name)}` : l.product_id}</b>
+          <div class="mut" style="font-size:12.5px;margin-top:4px">${s ? TYPE_META[s.type].label : ''} · ${l.kind === 'buyout' ? 'perpetual license' : 'subscription-bound'} ${l.created_at ? '· ' + String(l.created_at).slice(0,10) : ''}</div>
+          <div class="mut" style="font-size:11.5px;font-family:ui-monospace,monospace;margin-top:3px">${esc(l.license_key)}</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          ${ok ? '<span class="badge badge-safe">● ' + l.status + '</span>' : '<span class="badge badge-warn">● deactivated</span>'}
+          ${s ? `<button class="btn btn-ghost btn-sm" onclick="go('skill','${s.id}')">View</button>` : ''}
+          ${ok && s ? `<button class="btn btn-primary btn-sm" onclick="${window.LIVE ? `acquireLive('${l.product_id}')` : `toast('Demo — downloads work on the live site.')`}">⬇ Download</button>` : `<button class="btn btn-ghost btn-sm" onclick="go('billing')">Reactivate</button>`}
+        </div>
+      </div>`;
+    }).join('') : `<div class="empty">Nothing here yet — <a class="see-all" tabindex="0" role="button" onclick="go('browse')">browse the marketplace</a> to license your first product.</div>`}
+  </div>`;
+}
+
+/* ================= DESIGNER PROFILE ================= */
+function renderDesigner(){
+  const key = state.routeArg;
+  const list = SKILLS.filter(s => (s.designer && s.designer === key) || s.designerLabel === key || designerOf(s).name === key);
+  if(!list.length) return `<div class="page"><div class="empty">Designer not found.</div></div>`;
+  const d = designerOf(list[0]);
+  const dl = list.reduce((a, s) => a + (s.downloads || 0), 0);
+  const rated = list.filter(s => s.rating);
+  const avg = rated.length ? (rated.reduce((a, s) => a + Number(s.rating), 0) / rated.length).toFixed(1) : '—';
+  return `
+  <div class="page">
+    <a class="crumb" tabindex="0" role="button" onclick="go('browse')">← Back to browse</a>
+    <div style="display:flex;align-items:center;gap:16px;margin:14px 0 8px">
+      <div class="avatar" style="width:56px;height:56px;font-size:20px;${DESIGNERS[key]?`background:${DESIGNERS[key].color}`:''}">${(d.name||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()}</div>
+      <div>
+        <h1 style="font-size:26px;font-weight:800;letter-spacing:-.02em">${esc(d.name)}</h1>
+        <div style="color:var(--muted);font-size:13.5px">${esc(d.handle || '')} · ${list.length} product${list.length===1?'':'s'} · ⬇ ${fmt(dl)} · ★ ${avg}</div>
+      </div>
+    </div>
+    <div class="grid grid-3" style="margin-top:22px">${list.map(s => skillCard(s)).join('')}</div>
+  </div>`;
+}
+
 const ROUTES = {
   home: renderHome, browse: renderBrowse, skill: renderSkill,
   pricing: renderPricing, billing: renderBilling,
   dashboard: renderDashboard, upload: renderUpload,
   docs: renderDocs, sellerdocs: renderSellerDocs,
+  library: renderLibrary, designer: renderDesigner,
   get admin(){ return renderAdmin; },
 };
 const NAV = [
   ['home','Home'],['browse','Browse'],['pricing','Pricing'],
-  ['dashboard','Designer Studio'],['billing','Billing'],['docs','Docs'],
+  ['dashboard','Designer Studio'],['library','Library'],['billing','Billing'],['docs','Docs'],
 ];
 function render(){
   const signedOut = window.LIVE && !window.SESSION;
@@ -1843,7 +1904,10 @@ async function initLive(){
     SKILLS.length = 0;
     data.sort((a,b)=>(a.trend_rank||999)-(b.trend_rank||999)).forEach(r=>SKILLS.push(mapRow(r)));
     await loadAccount();
-    sb.auth.onAuthStateChange(async ()=>{ await loadAccount(); render(); });
+    sb.auth.onAuthStateChange(async (event)=>{
+      if(event === 'PASSWORD_RECOVERY') showNewPassword();
+      await loadAccount(); render();
+    });
     render();
     toast('🟢 Connected to skillz.ai live backend');
   }catch(e){ /* stay in demo mode */ }
@@ -1867,6 +1931,10 @@ function showAuth(){
       <div style="display:flex;gap:10px">
         <button class="btn btn-primary" style="flex:1" onclick="doAuth('in')">Sign in</button>
         <button class="btn btn-ghost" style="flex:1" onclick="doAuth('up')">Create account</button>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:12px;font-size:12.5px">
+        <a style="color:var(--accent);cursor:pointer" tabindex="0" role="button" onclick="forgotPass()">Forgot password?</a>
+        <a style="color:var(--accent);cursor:pointer" tabindex="0" role="button" onclick="magicLink()">Email me a sign-in link</a>
       </div>
       <div id="authMsg" style="font-size:12.5px;color:var(--red);margin-top:12px"></div>
     </div>`;
@@ -1893,6 +1961,57 @@ authClick = function(){
 function requireAuth(){
   if(!window.SESSION){ showAuth(); return false; }
   return true;
+}
+async function forgotPass(){
+  const email = $('authEmail')?.value.trim(); const msg = $('authMsg');
+  if(!email){ if(msg){ msg.textContent = 'Enter your email above first.'; } return; }
+  if(msg){ msg.style.color = 'var(--muted)'; msg.textContent = 'Sending…'; }
+  const {error} = await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname });
+  if(msg){ msg.style.color = error ? 'var(--red)' : 'var(--green)'; msg.textContent = error ? error.message : '✅ Reset link sent — check your email.'; }
+}
+async function magicLink(){
+  const email = $('authEmail')?.value.trim(); const msg = $('authMsg');
+  if(!email){ if(msg){ msg.textContent = 'Enter your email above first.'; } return; }
+  if(msg){ msg.style.color = 'var(--muted)'; msg.textContent = 'Sending…'; }
+  const {error} = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: location.origin + location.pathname } });
+  if(msg){ msg.style.color = error ? 'var(--red)' : 'var(--green)'; msg.textContent = error ? error.message : '✅ Sign-in link sent — check your email.'; }
+}
+function showNewPassword(){
+  document.querySelector('.modal-bg')?.remove();
+  const bg = document.createElement('div');
+  bg.className = 'modal-bg';
+  bg.innerHTML = `
+    <div class="modal">
+      <div style="font-size:19px;font-weight:750;margin-bottom:4px">Set a new password</div>
+      <div style="color:var(--muted);font-size:13.5px;margin-bottom:18px">You followed a reset link — choose a new password for your account.</div>
+      <div class="field" style="margin-bottom:16px"><label>New password</label><input id="newPass" type="password" placeholder="••••••••"></div>
+      <button class="btn btn-primary" style="width:100%" onclick="saveNewPassword()">Save password</button>
+      <div id="npMsg" style="font-size:12.5px;color:var(--red);margin-top:12px"></div>
+    </div>`;
+  document.body.appendChild(bg);
+}
+async function saveNewPassword(){
+  const pw = $('newPass')?.value; const msg = $('npMsg');
+  if(!pw || pw.length < 8){ if(msg) msg.textContent = 'Password must be at least 8 characters.'; return; }
+  const {error} = await sb.auth.updateUser({ password: pw });
+  if(error){ if(msg) msg.textContent = error.message; return; }
+  document.querySelector('.modal-bg')?.remove();
+  toast('✅ Password updated — you\'re signed in.');
+  render();
+}
+async function loadLibrary(){
+  if(!window.LIVE || !window.SESSION){ state.library = null; return; }
+  const {data} = await sb.from('licenses').select('product_id, kind, status, license_key, created_at').order('created_at', {ascending:false});
+  state.library = data || [];
+  if(state.route === 'library') render();
+}
+async function reportProduct(id){
+  if(!window.LIVE){ toast('Reports work on the live site.'); return; }
+  if(!requireAuth()) return;
+  const reason = prompt('What\'s wrong with this product? (malware, stolen content, misleading listing, etc.)');
+  if(!reason || reason.trim().length < 3) return;
+  const {error} = await sb.from('product_reports').insert({ product_id: id, reporter_id: window.SESSION.user.id, reason: reason.trim().slice(0, 1000) });
+  toast(error ? '⚠️ ' + error.message : '✅ Report filed — our moderation team will review it.');
 }
 
 /* ---------- live action overrides ---------- */
@@ -2039,6 +2158,14 @@ async function loadStudio(){
   const {data} = await sb.functions.invoke('studio-stats', {body:{}});
   if(data?.ok){ state.studio = data; if(state.route === 'dashboard') render(); }
 }
+async function editMeta(id){
+  const d = prompt('New product description (max 500 characters):');
+  if(!d || !d.trim()) return;
+  const {data, error} = await sb.functions.invoke('studio-stats', {body:{action:'update_meta', product_id:id, description:d.trim()}});
+  if(error || data?.error){ toast('⚠️ ' + (data?.error || error.message)); return; }
+  toast('✅ Description updated.');
+  await Promise.all([loadStudio(), typeof refreshProducts === 'function' ? refreshProducts() : null]); render();
+}
 async function studioAction(action, id, priceUsdStr){
   const body = {action, product_id: id};
   if(priceUsdStr != null){ const cents = Math.round(parseFloat(priceUsdStr) * 100); if(!Number.isFinite(cents) || cents < 0){ toast('Enter a valid price.'); return; } body.price_usd_cents = cents; }
@@ -2141,7 +2268,14 @@ async function loadModQueue(){
       ${s.product_id} · $${(s.amount_cents/100).toFixed(2)} · ${(s.created_at || '').slice(0, 10)}
       ${s.refunded_at ? '<span class="badge badge-warn">refunded</span>' : `<button class="btn btn-ghost btn-sm" onclick="modRefund('${s.id}')">↩ Refund</button>`}
     </div>`).join('');
-  el.innerHTML = q + (sales ? `<div style="font-weight:700;margin:14px 0 4px;color:var(--text)">Recent dollar sales</div>${sales}` : '');
+  const reps = (d.reports || []).map(r => `
+    <div style="border-top:1px solid var(--border);padding:8px 0;font-size:12.5px">
+      <b>${esc(r.product_id)}</b> · ${(r.created_at || '').slice(0, 10)} — ${esc(r.reason)}
+      <button class="btn btn-danger btn-sm" style="margin-left:8px" onclick="modAct('unpublish','${r.product_id}')">✕ Unpublish</button>
+    </div>`).join('');
+  el.innerHTML = q
+    + (reps ? `<div style="font-weight:700;margin:14px 0 4px;color:var(--text)">⚑ User reports</div>${reps}` : '')
+    + (sales ? `<div style="font-weight:700;margin:14px 0 4px;color:var(--text)">Recent dollar sales</div>${sales}` : '');
 }
 async function modAct(action, id){
   const r = await adminCall('admin-moderate', {action, product_id: id, reason: action === 'unpublish' ? 'admin moderation' : undefined});
